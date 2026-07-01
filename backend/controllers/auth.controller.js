@@ -16,7 +16,9 @@ const pickPublic = (row) =>
  * 400: ข้อมูลไม่ครบ
  * 401: อีเมล/รหัสผ่านไม่ถูกต้อง
  */
+// http://localhost:3000/api/auth/login req.body=(email,password,status,level)
 exports.login = async (req, res, next) => {
+  console.log("Auth Crntroller: login",req.body);
   try {
     const { email, password } = req.body || {};
     if (!email || !password) {
@@ -26,11 +28,11 @@ exports.login = async (req, res, next) => {
     }
 
     // 1) ค้นผู้ใช้จากอีเมล (ต้องดึง password_hash มาด้วย เพื่อตรวจรหัสผ่าน)
-    const user = await db("users")
+    const user = await db("users") // return await db('users')
       .select("id", "name_th", "email", "role", "password_hash")
       .where({ email })
       .first();
-
+      console.log("User:",user);
     if (!user) {
       return res
         .status(401)
@@ -51,7 +53,7 @@ exports.login = async (req, res, next) => {
       process.env.JWT_SECRET,                                // ความลับจาก .env
       { expiresIn: process.env.JWT_EXPIRES || "1h" }         // อายุโทเค็น
     );
-
+    console.log("Generated JWT Token:",token);
     // 4) ส่งผลลัพธ์ (อย่าส่ง password_hash ออกไป)
     return res.json({
       success: true,

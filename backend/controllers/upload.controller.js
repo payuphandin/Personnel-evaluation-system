@@ -1,22 +1,26 @@
-const path = require('path');
-const fs = require('fs');
-const attRepo = require('../repositories/attachments');
-const asgRepo = require('../repositories/assignments');
-const mapRepo = require('../repositories/indicatorEvidence');
-const db = require('../db/knex');
+const path = require("path");
+const fs = require("fs");
+const attRepo = require("../repositories/attachments");
+const asgRepo = require("../repositories/assignments");
+const mapRepo = require("../repositories/indicatorEvidence");
+const db = require("../db/knex");
 
 // ---------- helpers ----------
 function safeUnlink(abs) {
-  try { if (fs.existsSync(abs)) fs.unlinkSync(abs); } catch {}
+  try {
+    if (fs.existsSync(abs)) fs.unlinkSync(abs);
+  } catch {}
 }
 function relFromUploads(absPath) {
   // ให้ได้ path แบบ relative ต่อโฟลเดอร์ uploads และใช้ slash เดียว
   return path
-    .relative(path.join(__dirname, '..', 'uploads'), absPath)
-    .replace(/\\/g, '/');
+    .relative(path.join(__dirname, "..", "uploads"), absPath)
+    .replace(/\\/g, "/");
 }
 async function isPeriodActive(period_id) {
-  const row = await db('evaluation_periods').where({ id: period_id, is_active: 1 }).first(); 
+  const row = await db("evaluation_periods")
+    .where({ id: period_id, is_active: 1 })
+    .first();
   // return row or undefined หมายความว่า period_id ที่ส่งมา ต้องเป็นเลข และต้องมีในตาราง evaluation_periods และ is_active=1  เพื่อให้ period นั้นเปิดอยู่
   return !!row;
 }
@@ -26,59 +30,125 @@ async function isPeriodActive(period_id) {
 // Body: { period_id, indicator_id, evidence_type_id } + file
 // =====================================================================
 exports.uploadEvidence = async (req, res, next) => {
-  console.log('uploadEvidence body=', req.body);
-  console.log('uploadEvidence file=', req.file);
-  console.log('uploadEvidence user=', req.user);
-  console.log('uploadEvidence user.id=', req.user?.id);
-  console.log('uploadEvidence user.role=', req.user?.role);
-  console.log('uploadEvidence user.email=', req.user?.email); 
+  console.log("uploadEvidence body=", req.body);
+  console.log("uploadEvidence file=", req.file);
+  console.log("uploadEvidence user=", req.user);
+  console.log("uploadEvidence user.id=", req.user?.id);
+  console.log("uploadEvidence user.role=", req.user?.role);
+  console.log("uploadEvidence user.email=", req.user?.email);
   try {
-    const evaluatee_id = Number(req.user?.id);// ต้องมี user.id จาก JWT เสมอ  return 401 ถ้าไม่มี   ถ้ามี return 400
-        if (!evaluatee_id) return res.status(401).json({ success:false, message:'invalid user' });
-    const { period_id, indicator_id, evidence_type_id } = req.body || {};
+    const evaluatee_id = Number(req.user?.id);
+    if (!evaluatee_id)
+      return res.status(401).json({ success: false, message: "invalid user" });
+    
+    // 1. รับค่าที่ส่งมาจาก Frontend เพิ่มเติม (upload_mode, link_url, link_title)
+    const { 
+      period_id, 
+      indicator_id, 
+      evidence_type_id, 
+      upload_mode, // 'file' หรือ 'link'
+      link_url, 
+      link_title 
+    } = req.body || {};
 
-    if (!req.file) return res.status(400).json({ success:false, message:'ไม่ได้ส่ง file มาด้วย' });
     if (!period_id || !indicator_id || !evidence_type_id) {
-      return res.status(400).json({ success:false, message:'missing period_id/indicator_id/evidence_type_id' });
+      return res.status(400).json({
+        success: false,
+        message: "missing period_id/indicator_id/evidence_type_id",
+      });
+    }
+
+    // 2. ตรวจสอบเงื่อนไขแยกตามโหมดการส่งข้อมูล
+    let attachment_type = "file";
+    let file_name = null;
+    let mime_type = null;
+    let size_bytes = null;
+    let storage_path = null;
+
+    if (upload_mode === "link" || link_url) {
+      // โหมดแนบลิงก์
+      attachment_type = "link";
+      if (!link_url) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "ไม่ได้ส่ง link_url มาด้วย" 
+        });
+      }
+      
+      storage_path = link_url; // เก็บตัว URL ลงใน storage_path
+      file_name = link_title || "ลิงก์หลักฐานแนบ"; // ชื่อแสดงผลของลิงก์
+      mime_type = null;
+      size_bytes = null;
+    } else {
+      // โหมดอัปโหลดไฟล์ปกติ
+      attachment_type = "file";
+      if (!req.file) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "ไม่ได้ส่ง file มาด้วย" 
+        });
+      }
+      
+      storage_path = relFromUploads(req.file.path);
+      file_name = Buffer.from(req.file.originalname, "latin1").toString("utf8");
+      mime_type = req.file.mimetype;
+      size_bytes = req.file.size;
     }
 
     // ต้องถูก assign ใน period นั้น
-    const okAssign = await asgRepo.hasEvaluateeInPeriod({  //return true/false
+    const okAssign = await asgRepo.hasEvaluateeInPeriod({
       period_id: Number(period_id),
-      evaluatee_id
+      evaluatee_id,
     });
-    if (!okAssign) return res.status(400).json({ success:false, message:'evaluatee not assigned in the period' });
+    if (!okAssign)
+      return res.status(400).json({
+        success: false,
+        message: "evaluatee not assigned in the period",
+      });
 
     // period ต้องเปิดอยู่
-    if (!(await isPeriodActive(Number(period_id)))) {  //คือ period_id ที่ส่งมา ต้องเป็นเลข และต้องมีในตาราง evaluation_periods และ is_active=1
-      //isPeriodActive return true/false  
-      return res.status(403).json({ success:false, message:'period closed' });
+    if (!(await isPeriodActive(Number(period_id)))) {
+      return res.status(403).json({ success: false, message: "period closed" });
     }
 
-    // mapping indicator-evidence_type ต้องถูกต้อง (มีในตาราง indicator_evidence)หรือไม่
+    // mapping indicator-evidence_type ต้องถูกต้อง
     const okMap = await mapRepo.mapExists({
       indicator_id: Number(indicator_id),
-      evidence_type_id: Number(evidence_type_id)
+      evidence_type_id: Number(evidence_type_id),
     });
-    if (!okMap) return res.status(400).json({ success:false, message:'invalid indicator/evidence_type pair' });
-    // บันทึกลงตาราง attachments
-    // console.log('req.file.path=', req.file.path);
-    const storage_path = relFromUploads(req.file.path);
-    console.log('storage_path=', storage_path);
-    const [id] = await db('attachments').insert({
+    if (!okMap)
+      return res.status(400).json({
+        success: false,
+        message: "invalid indicator/evidence_type pair",
+      });
+
+    // 3. บันทึกลงตาราง attachments โดยนำตัวแปรที่เราเตรียมไว้ไป insert
+    const [id] = await db("attachments").insert({
       period_id: Number(period_id),
       evaluatee_id,
       indicator_id: Number(indicator_id),
       evidence_type_id: Number(evidence_type_id),
-      file_name: req.file.originalname,
-      mime_type: req.file.mimetype,
-      size_bytes: req.file.size,
-      storage_path
+      attachment_type, // เพิ่มฟิลด์ประเภท
+      file_name,
+      mime_type,
+      size_bytes,
+      storage_path,
     });
 
     const created = await attRepo.findById(id);
-    res.status(201).json({ success:true, data: { ...created, url: `/uploads/${created.storage_path}` }});
-  } catch (e) { next(e); }
+
+    // 4. ส่งกลับ response (ถ้าเป็นลิงก์ ไม่ต้องใส่ prefix /uploads/)
+    const responseUrl = created.attachment_type === "link"
+      ? created.storage_path
+      : `/uploads/${created.storage_path}`;
+
+    res.status(201).json({
+      success: true,
+      data: { ...created, url: responseUrl },
+    });
+  } catch (e) {
+    next(e);
+  }
 };
 
 // =====================================================================
@@ -90,15 +160,18 @@ exports.listMine = async (req, res, next) => {
     const evaluatee_id = Number(req.user?.id);
     const { period_id, indicator_id, evidence_type_id } = req.query || {};
 
-    let q = db('attachments').where({ evaluatee_id }).orderBy('id', 'desc');
+    let q = db("attachments").where({ evaluatee_id }).orderBy("id", "desc");
     if (period_id) q = q.andWhere({ period_id: Number(period_id) });
     if (indicator_id) q = q.andWhere({ indicator_id: Number(indicator_id) });
-    if (evidence_type_id) q = q.andWhere({ evidence_type_id: Number(evidence_type_id) });
+    if (evidence_type_id)
+      q = q.andWhere({ evidence_type_id: Number(evidence_type_id) });
 
     const rows = await q;
-    const data = rows.map(r => ({ ...r, url:`/uploads/${r.storage_path}` }));
-    res.json({ success:true, data });
-  } catch (e) { next(e); }
+    const data = rows.map((r) => ({ ...r, url: `/uploads/${r.storage_path}` }));
+    res.json({ success: true, data });
+  } catch (e) {
+    next(e);
+  }
 };
 
 // =====================================================================
@@ -111,18 +184,20 @@ exports.deleteMine = async (req, res, next) => {
     const row = await attRepo.findById(id);
 
     if (!row || row.evaluatee_id !== evaluatee_id) {
-      return res.status(404).json({ success:false, message:'not found' });
+      return res.status(404).json({ success: false, message: "not found" });
     }
     if (!(await isPeriodActive(row.period_id))) {
-      return res.status(403).json({ success:false, message:'period closed' });
+      return res.status(403).json({ success: false, message: "period closed" });
     }
 
-    const abs = path.join(__dirname, '..', 'uploads', row.storage_path);
-    await db('attachments').where({ id }).del();
+    const abs = path.join(__dirname, "..", "uploads", row.storage_path);
+    await db("attachments").where({ id }).del();
     safeUnlink(abs);
 
-    res.json({ success:true, message:'deleted' });
-  } catch (e) { next(e); }
+    res.json({ success: true, message: "deleted" });
+  } catch (e) {
+    next(e);
+  }
 };
 
 // =====================================================================
@@ -132,29 +207,40 @@ exports.updateFileMine = async (req, res, next) => {
   try {
     const userId = Number(req.user?.id);
     const id = Number(req.params.id);
-    if (!req.file) return res.status(400).json({ success:false, message:'no file' });
+    if (!req.file)
+      return res.status(400).json({ success: false, message: "no file" });
 
     const row = await attRepo.findById(id);
-    if (!row || row.evaluatee_id !== userId) return res.status(404).json({ success:false, message:'not found' });
+    if (!row || row.evaluatee_id !== userId)
+      return res.status(404).json({ success: false, message: "not found" });
 
     if (!(await isPeriodActive(row.period_id))) {
-      return res.status(403).json({ success:false, message:'period closed' });
+      return res.status(403).json({ success: false, message: "period closed" });
     }
 
-    const oldAbs = path.join(__dirname, '..', 'uploads', row.storage_path);
+    const oldAbs = path.join(__dirname, "..", "uploads", row.storage_path);
     const newRel = relFromUploads(req.file.path);
 
-    await db('attachments').where({ id }).update({
-      file_name: req.file.originalname,
+    const originalName = Buffer.from(req.file.originalname, "latin1").toString(
+      "utf8",
+    );
+
+    await db("attachments").where({ id }).update({
+      file_name: originalName,
       mime_type: req.file.mimetype,
       size_bytes: req.file.size,
-      storage_path: newRel
+      storage_path: newRel,
     });
 
     safeUnlink(oldAbs);
     const updated = await attRepo.findById(id);
-    res.json({ success:true, data: { ...updated, url: `/uploads/${updated.storage_path}` }});
-  } catch (e) { next(e); }
+    res.json({
+      success: true,
+      data: { ...updated, url: `/uploads/${updated.storage_path}` },
+    });
+  } catch (e) {
+    next(e);
+  }
 };
 
 // =====================================================================
@@ -167,26 +253,41 @@ exports.updateMetaMine = async (req, res, next) => {
     const { indicator_id, evidence_type_id } = req.body || {};
 
     const row = await attRepo.findById(id);
-    if (!row || row.evaluatee_id !== userId) return res.status(404).json({ success:false, message:'not found' });
+    if (!row || row.evaluatee_id !== userId)
+      return res.status(404).json({ success: false, message: "not found" });
 
     if (!(await isPeriodActive(row.period_id))) {
-      return res.status(403).json({ success:false, message:'period closed' });
+      return res.status(403).json({ success: false, message: "period closed" });
     }
 
     const newIndicator = indicator_id ? Number(indicator_id) : row.indicator_id;
-    const newEvType   = evidence_type_id ? Number(evidence_type_id) : row.evidence_type_id;
+    const newEvType = evidence_type_id
+      ? Number(evidence_type_id)
+      : row.evidence_type_id;
 
-    const okMap = await mapRepo.mapExists({ indicator_id: newIndicator, evidence_type_id: newEvType });
-    if (!okMap) return res.status(400).json({ success:false, message:'invalid indicator/evidence_type pair' });
-
-    await db('attachments').where({ id }).update({
+    const okMap = await mapRepo.mapExists({
       indicator_id: newIndicator,
-      evidence_type_id: newEvType
+      evidence_type_id: newEvType,
+    });
+    if (!okMap)
+      return res.status(400).json({
+        success: false,
+        message: "invalid indicator/evidence_type pair",
+      });
+
+    await db("attachments").where({ id }).update({
+      indicator_id: newIndicator,
+      evidence_type_id: newEvType,
     });
 
     const updated = await attRepo.findById(id);
-    res.json({ success:true, data: { ...updated, url: `/uploads/${updated.storage_path}` }});
-  } catch (e) { next(e); }
+    res.json({
+      success: true,
+      data: { ...updated, url: `/uploads/${updated.storage_path}` },
+    });
+  } catch (e) {
+    next(e);
+  }
 };
 
 // =====================================================================
@@ -198,12 +299,16 @@ exports.listForEvaluator = async (req, res, next) => {
     const evaluateeId = Number(req.params.evaluateeId);
     const { period_id } = req.query || {};
 
-    let q = db('attachments').where({ evaluatee_id: evaluateeId }).orderBy('id', 'desc');
+    let q = db("attachments")
+      .where({ evaluatee_id: evaluateeId })
+      .orderBy("id", "desc");
     if (period_id) q = q.andWhere({ period_id: Number(period_id) });
 
     // (ถ้าต้องการตรวจสิทธิ์ evaluator ↔ evaluatee เพิ่ม เติมที่นี่)
     const rows = await q;
-    const data = rows.map(r => ({ ...r, url:`/uploads/${r.storage_path}` }));
-    res.json({ success:true, data });
-  } catch (e) { next(e); }
+    const data = rows.map((r) => ({ ...r, url: `/uploads/${r.storage_path}` }));
+    res.json({ success: true, data });
+  } catch (e) {
+    next(e);
+  }
 };

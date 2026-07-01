@@ -9,11 +9,12 @@ const db = knex({
   connection: {
     host: process.env.DB_HOST || '127.0.0.1',
     user: process.env.DB_USER || 'root',
-    // password: process.env.DB_PASS || 'rootpassword',
-    password: process.env.DB_PASS || '', // สำหรับ XAMPP
+    password: process.env.DB_PASS || 'rootpassword',
+    // password: process.env.DB_PASS || '', // สำหรับ XAMPP
     database: process.env.DB_NAME || 'skills_db',
     port: Number(process.env.DB_PORT) || 3306,
     connectTimeout: 15000,
+    charset: 'utf8mb4'
   },
   pool: { min: 0, max: 10, acquireTimeoutMillis: 20000 },
 });

@@ -26,6 +26,10 @@ const pickPublic = (row) =>
  * - ถ้าเป็นบทบาทอื่น => เห็นเฉพาะ "ข้อมูลตัวเอง"
  * - ใช้สำหรับอธิบาย RBAC และการดึงข้อมูลแบบปลอดภัย (ไม่ส่ง password_hash)
  */
+
+
+
+
 exports.list = async (req, res, next) => {
   try {
     // กรณี admin เห็นทั้งหมด
@@ -54,6 +58,36 @@ exports.list = async (req, res, next) => {
     next(e); // ส่งต่อให้ error middleware รวมศูนย์การจัดการ error
   }
 };
+
+
+exports.list_all = async (req, res, next) => {
+  try {
+    const rows = await db("users as u")
+      .leftJoin("departments as d", "u.department_id", "d.id")
+      .leftJoin("org_groups as o", "u.org_group_id", "o.id")
+      .select(
+        "u.id",
+        "u.email",
+        "u.name_th",
+        "u.avatar",
+        "u.role",
+        "u.status",
+        "u.created_at",
+
+        "d.name_th as department_name",
+        "o.name_th as org_group_name"
+      )
+      .orderBy("u.id", "desc");
+
+    res.json({ success: true, data: rows });
+  } catch (e) {
+    next(e);
+  }
+};
+
+
+
+
 
 /**
  * GET /api/users/:id
@@ -88,7 +122,7 @@ exports.get = async (req, res, next) => {
  */
 exports.create = async (req, res, next) => {
   try {
-    const { name_th, email, password, role = "evaluatee" } = req.body || {};
+    const { name_th, email, password,department_id,org_group_id, role = "evaluatee" } = req.body || {};
 
     // 1) ตรวจว่ามีฟิลด์จำเป็นไหม
     if (!name_th || !email || !password) {
@@ -114,9 +148,11 @@ exports.create = async (req, res, next) => {
       email,
       password_hash,
       role,
+      department_id,
+      org_group_id
     });
     const created = await db("users")
-      .select("id", "name_th", "email", "role", "created_at")
+      .select("id", "name_th", "email", "role", "created_at","department_id","org_group_id")
       .where({ id: insertId })
       .first();
 
@@ -126,6 +162,53 @@ exports.create = async (req, res, next) => {
   }
 };
 
+
+
+exports.list_org_groups = async (req, res) => {
+  try {
+    // สมมติว่าใช้ Knex หรือ Prisma ในการดึงข้อมูล
+    const orgGroups = await db('org_groups')
+      .select(
+        "org_groups.id",
+        "org_groups.code",
+        "org_groups.name_th as org_groups_name"
+      )     
+    res.json({
+      status: 'success',
+      data: orgGroups
+    });
+  } catch (error) {
+    res.status(500).json({ message: "ไม่สามารถดึงข้อมูลฝ่ายได้" });
+  }
+};
+
+
+exports.list_departments = async (req, res) => {
+  try {
+    const data = await db("departments as d")
+      .leftJoin("vocational_categories as c", "c.id", "d.category_id")
+      .leftJoin("org_groups as og", "og.id", "d.org_group_id")
+      .select(
+        "d.id",
+        "d.code",
+        "d.name_th as department_name",
+        "c.id as category_id",
+        "c.name_th as category_name",
+        "og.id as org_group_id",
+        "og.name_th as org_group_name"
+      )
+      .orderBy("d.name_th", "asc")
+
+    res.json({ data })
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+}
+
+
 /**
  * PUT /api/users/:id
  * ---------------------------
@@ -134,53 +217,10 @@ exports.create = async (req, res, next) => {
  * - ถ้าเปลี่ยนอีเมล ต้องตรวจซ้ำ (unique)
  * - ถ้าส่ง password มาใหม่ -> แฮชใหม่และอัปเดต password_hash
  */
-exports.update = async (req, res, next) => {
-  try {
-    const id = req.params.id;
-    if (!id) return res.status(400).json({ success: false, message: "Missing user ID" });
 
-    const { name_th, email, role, password } = req.body || {};
-    const payload = {};
 
-    // 1) เก็บเฉพาะฟิลด์ที่ส่งเข้ามา (ไม่บังคับต้องส่งครบ)
-    if (name_th != null) payload.name_th = name_th;
-    if (email != null) payload.email = email;
-    if (role != null) payload.role = role;
 
-    // 2) ถ้าเปลี่ยนรหัสผ่าน -> แฮชใหม่
-    if (password && password.trim() !== "") {
-      payload.password_hash = await bcrypt.hash(password, 10);
-    }
 
-    // 3) ถ้าจะเปลี่ยนอีเมล -> ตรวจซ้ำกับคนอื่น (ห้ามชนกับผู้ใช้รายอื่น)
-    if (payload.email) {
-      const dup = await db("users")
-        .where({ email: payload.email })
-        .andWhereNot({ id })
-        .first();
-
-      if (dup) {
-        return res.status(409).json({ success: false, message: "Email already exists" });
-      }
-    }
-
-    // 4) update และตรวจว่ามีแถวที่ถูกอัปเดตไหม
-    const affected = await db("users").where({ id }).update(payload);
-    if (!affected) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-
-    // 5) อ่านข้อมูลล่าสุดกลับเพื่อส่งให้ client (ไม่รวม password_hash)
-    const updated = await db("users")
-      .select("id", "name_th", "email", "role", "created_at")
-      .where({ id })
-      .first();
-
-    res.json({ success: true, data: updated });
-  } catch (e) {
-    next(e);
-  }
-};
 
 /**
  * DELETE /api/users/:id

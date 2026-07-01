@@ -5,7 +5,9 @@ const upload = require('../middlewares/upload');
 const ctrl = require('../controllers/upload.controller');
 
 // ===== Evaluatee =====
-router.post('/evidence', auth('evaluatee'), upload.single('file'), ctrl.uploadEvidence); 
+router.post('/upload_evidence', auth('evaluatee'), upload.single('file'), ctrl.uploadEvidence); 
+
+
 // upload.single('file'), file คือ ชื่อ field ใน form-data ไม่ถูกต้อง error multer แสดงว่า "Unexpected field"
 router.get('/mine', auth('evaluatee'), ctrl.listMine);
 router.delete('/:id', auth('evaluatee'), ctrl.deleteMine);
