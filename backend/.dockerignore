@@ -1,4 +1,5 @@
 node_modules
+.git
+.vscode
 npm-debug.log
-.env
 uploads

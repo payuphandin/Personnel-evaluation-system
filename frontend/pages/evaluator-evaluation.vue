@@ -59,16 +59,39 @@
                 </div>
               </div>
               <div class="stats-glass-card">
-                <div class="stat-value">{{ assignments.length }}</div>
+                <div class="stat-value">{{ pendingAssignments.length }}</div>
                 <div class="stat-label">รายการที่ต้องประเมิน</div>
+                <div class="stat-glow"></div>
+              </div>
+              <div class="stats-glass-card">
+                <div class="stat-value">{{ completedAssignments.length }}</div>
+                <div class="stat-label">ประเมินเสร็จแล้ว</div>
                 <div class="stat-glow"></div>
               </div>
             </div>
           </div>
 
-          <v-row v-if="assignments.length > 0">
+          <div
+            v-if="pendingAssignments.length > 0"
+            class="d-flex align-center justify-space-between flex-wrap gap-3 mb-4"
+          >
+            <div>
+              <div class="text-overline font-weight-bold text-indigo-accent-4">
+                ต้องประเมิน
+              </div>
+              <div class="text-h6 font-weight-black text-indigo-darken-4">
+                รายการที่ยังรอการประเมินหรือกำลังดำเนินการ
+              </div>
+            </div>
+            <div class="glass-badge">
+              <v-icon size="16" class="me-2">mdi-clipboard-text-clock-outline</v-icon>
+              {{ pendingAssignments.length }} รายการ
+            </div>
+          </div>
+
+          <v-row v-if="pendingAssignments.length > 0">
             <v-col
-              v-for="(item, index) in assignments"
+              v-for="(item, index) in pendingAssignments"
               :key="item.id"
               cols="12"
               md="6"
@@ -83,7 +106,7 @@
                     <span></span><span></span><span></span><span></span>
                   </div>
 
-                  <div class="d-flex align-start mb-6 relative-z">
+                  <div class="d-flex align-start justify-space-between mb-6 relative-z">
                     <div class="avatar-container me-5">
                       <div class="avatar-ring-spin"></div>
                       <v-avatar size="72" class="premium-avatar">
@@ -103,6 +126,14 @@
                         {{ item.dept_name || "ไม่ระบุแผนก" }}
                       </div>
                     </div>
+                    <v-chip
+                      size="small"
+                      variant="tonal"
+                      :color="assignmentStatusMeta(item.evaluator_status).color"
+                      class="font-weight-bold"
+                    >
+                      {{ assignmentStatusMeta(item.evaluator_status).label }}
+                    </v-chip>
                   </div>
 
                   <div class="period-container relative-z mb-8">
@@ -120,7 +151,7 @@
                     @click="openEvaluate(item)"
                   >
                     <span class="btn-content">
-                      เริ่มต้นประเมิน
+                      {{ assignmentActionText(item.evaluator_status) }}
                       <v-icon size="20" class="ms-2 arrow-icon"
                         >mdi-arrow-right</v-icon
                       >
@@ -132,7 +163,94 @@
             </v-col>
           </v-row>
 
-          <div v-else class="empty-hologram stagger-2">
+          <div v-if="completedAssignments.length > 0" class="mt-10 mb-4">
+            <div
+              class="d-flex align-center justify-space-between flex-wrap gap-3 mb-4"
+            >
+              <div>
+                <div class="text-overline font-weight-bold text-success">
+                  ประเมินเสร็จแล้ว
+                </div>
+                <div class="text-h6 font-weight-black text-indigo-darken-4">
+                  รายการที่ลงนามและส่งผลการประเมินเรียบร้อย
+                </div>
+              </div>
+              <div class="glass-badge">
+                <v-icon size="16" class="me-2">mdi-check-circle-outline</v-icon>
+                {{ completedAssignments.length }} รายการ
+              </div>
+            </div>
+
+            <v-row>
+              <v-col
+                v-for="(item, index) in completedAssignments"
+                :key="`completed-${item.id}`"
+                cols="12"
+                md="6"
+                lg="4"
+              >
+                <div class="ultra-card" :class="`stagger-${(index % 4) + 2}`">
+                  <div class="card-inner">
+                    <div class="card-gradient-overlay"></div>
+                    <div class="card-noise"></div>
+                    <div class="corner-accents">
+                      <span></span><span></span><span></span><span></span>
+                    </div>
+
+                    <div class="d-flex align-start justify-space-between mb-6 relative-z">
+                      <div class="d-flex align-start">
+                        <div class="avatar-container me-5">
+                          <div class="avatar-ring-spin"></div>
+                          <v-avatar size="72" class="premium-avatar">
+                            <v-icon color="success" size="36">mdi-check-decagram</v-icon>
+                          </v-avatar>
+                        </div>
+                        <div class="pt-2">
+                          <h3
+                            class="text-h5 font-weight-black text-indigo-darken-4 mb-1 tracking-tight"
+                          >
+                            {{ item.evaluatee_name }}
+                          </h3>
+                          <div class="dept-badge">
+                            <v-icon size="14" class="me-1">mdi-domain</v-icon>
+                            {{ item.dept_name || "ไม่ระบุแผนก" }}
+                          </div>
+                        </div>
+                      </div>
+                      <v-chip size="small" variant="tonal" color="success" class="font-weight-bold">
+                        เสร็จแล้ว
+                      </v-chip>
+                    </div>
+
+                    <div class="period-container relative-z mb-8">
+                      <div class="period-label">รอบการประเมิน</div>
+                      <div class="period-value">
+                        <v-icon size="18" color="indigo-accent-4" class="me-2"
+                          >mdi-clock-outline</v-icon
+                        >
+                        {{ item.period_name }}
+                      </div>
+                    </div>
+
+                    <button
+                      class="cyber-btn w-100 relative-z"
+                      @click="openEvaluate(item)"
+                    >
+                      <span class="btn-content">
+                        ดูผลการประเมิน
+                        <v-icon size="20" class="ms-2 arrow-icon"
+                          >mdi-arrow-right</v-icon
+                        >
+                      </span>
+                      <div class="btn-glare"></div>
+                    </button>
+                  </div>
+                </div>
+              </v-col>
+            </v-row>
+          </div>
+
+          <div v-if="assignments.length === 0" class="empty-hologram stagger-2">
             <div class="empty-orb">
               <v-icon size="60" color="indigo-lighten-2"
                 >mdi-folder-account-outline</v-icon
@@ -2363,6 +2481,30 @@ const topicGroups = [
   { code: "TOP3", name: "ด้านการพัฒนาตนเองและวิชาชีพ" },
   { code: "TOP4", name: "ด้านงานอื่นๆ ที่ได้รับมอบหมาย" },
 ];
+
+const pendingAssignments = computed(() =>
+  assignments.value.filter((item) => item.evaluator_status !== "completed"),
+);
+
+const completedAssignments = computed(() =>
+  assignments.value.filter((item) => item.evaluator_status === "completed"),
+);
+
+function assignmentStatusMeta(status) {
+  if (status === "completed") {
+    return { label: "เสร็จแล้ว", color: "success" };
+  }
+  if (status === "evaluating") {
+    return { label: "กำลังประเมิน", color: "warning" };
+  }
+  return { label: "รอประเมิน", color: "blue-grey" };
+}
+
+function assignmentActionText(status) {
+  if (status === "evaluating") return "ประเมินต่อ";
+  if (status === "completed") return "ดูผลการประเมิน";
+  return "เริ่มต้นประเมิน";
+}
 
 const totalIndicators = computed(() => indicators.value.length);
 const gradedCount = computed(
