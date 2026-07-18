@@ -11,6 +11,14 @@ router.get(
   "/periods/active",
   authz("evaluatee", "evaluator", "admin"),
   async (req, res) => {
+    try {
+      const now = new Date();
+      await db("evaluation_periods")
+        .where("is_active", 1)
+        .andWhere("end_date", "<", now)
+        .update({ is_active: 0 });
+    } catch {}
+
     const rows = await db("evaluation_periods")
       .where({ is_active: 1 })
       .orderBy("id", "desc");
@@ -93,11 +101,23 @@ router.post(
         return res.status(422).json({ message: "Missing required fields" });
       }
 
+      const now = new Date();
+      try {
+        await db("evaluation_periods")
+          .where("is_active", 1)
+          .andWhere("end_date", "<", now)
+          .update({ is_active: 0 });
+      } catch {}
+
       // 1) period active
       const per = await db("evaluation_periods")
         .where({ id: period_id, is_active: 1 })
         .first();
       if (!per) return res.status(404).json({ message: "Period not active" });
+
+      if (now < new Date(per.start_date) || now > new Date(per.end_date)) {
+        return res.status(403).json({ message: "Period closed (outside date range)" });
+      }
 
       // 2) indicator exists
       const ind = await db("indicators")

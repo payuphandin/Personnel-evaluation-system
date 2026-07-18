@@ -121,9 +121,13 @@
                       >
                         {{ item.evaluatee_name }}
                       </h3>
-                      <div class="dept-badge">
+                      <div class="dept-badge mb-1">
                         <v-icon size="14" class="me-1">mdi-domain</v-icon>
                         {{ item.dept_name || "ไม่ระบุแผนก" }}
+                      </div>
+                      <div class="dept-badge text-teal-darken-3 font-weight-bold" v-if="item.evaluatee_position">
+                        <v-icon size="14" class="me-1" color="teal">mdi-briefcase-outline</v-icon>
+                        {{ item.evaluatee_position }}
                       </div>
                     </div>
                     <v-chip
@@ -211,9 +215,13 @@
                           >
                             {{ item.evaluatee_name }}
                           </h3>
-                          <div class="dept-badge">
+                          <div class="dept-badge mb-1">
                             <v-icon size="14" class="me-1">mdi-domain</v-icon>
                             {{ item.dept_name || "ไม่ระบุแผนก" }}
+                          </div>
+                          <div class="dept-badge text-teal-darken-3 font-weight-bold" v-if="item.evaluatee_position">
+                            <v-icon size="14" class="me-1" color="teal">mdi-briefcase-outline</v-icon>
+                            {{ item.evaluatee_position }}
                           </div>
                         </div>
                       </div>
@@ -281,8 +289,16 @@
               </button>
 
               <div class="eval-target-info">
-                <div class="text-h5 font-weight-black gradient-text">
-                  {{ selected.evaluatee_name }}
+                <div class="d-flex align-center gap-3 flex-wrap">
+                  <div class="text-h5 font-weight-black gradient-text">
+                    {{ selected.evaluatee_name }}
+                  </div>
+                  <v-chip size="x-small" color="indigo-lighten-4" class="text-indigo-darken-4 font-weight-bold">
+                    {{ selected.dept_name || 'ไม่ระบุแผนก' }}
+                  </v-chip>
+                  <v-chip size="x-small" color="teal-lighten-4" class="text-teal-darken-4 font-weight-bold" v-if="selected.evaluatee_position">
+                    {{ selected.evaluatee_position }}
+                  </v-chip>
                 </div>
                 <div class="progress-indicator">
                   <div class="progress-text">
@@ -379,12 +395,19 @@
                         <div class="number-sphere-wrap">
                           <div
                             class="number-sphere"
-                            :class="{ 'is-done': isGraded(i.id) }"
+                            :class="{ 
+                              'is-draft': isGraded(i.id) && form[i.id]?.status === 'draft',
+                              'is-submitted': isGraded(i.id) && (form[i.id]?.status === 'submitted' || form[i.id]?.status === 'completed')
+                            }"
                           >
                             <span class="num">{{ i.display_idx }}</span>
                             <v-icon
                               v-if="isGraded(i.id)"
                               class="done-check"
+                              :class="{
+                                'is-draft-check': form[i.id]?.status === 'draft',
+                                'is-submitted-check': form[i.id]?.status === 'submitted' || form[i.id]?.status === 'completed'
+                              }"
                               size="18"
                               >mdi-check-bold</v-icon
                             >
@@ -392,12 +415,26 @@
                         </div>
 
                         <div class="flex-grow-1">
-                          <h4
-                            class="text-h6 font-weight-bold text-indigo-darken-4 mb-4"
-                            style="line-height: 1.4"
-                          >
-                            {{ i.name_th }}
-                          </h4>
+                          <div class="d-flex align-start justify-space-between mb-4 flex-wrap gap-2">
+                            <h4
+                              class="text-h6 font-weight-bold text-indigo-darken-4 mb-0"
+                              style="line-height: 1.4; max-width: 80%;"
+                            >
+                              {{ i.name_th }}
+                            </h4>
+                            <v-chip
+                              v-if="isGraded(i.id)"
+                              size="x-small"
+                              :color="form[i.id]?.status === 'submitted' || form[i.id]?.status === 'completed' ? 'blue' : 'success'"
+                              variant="flat"
+                              class="font-weight-bold"
+                            >
+                              <v-icon start size="12">
+                                {{ form[i.id]?.status === 'submitted' || form[i.id]?.status === 'completed' ? 'mdi-checkbox-marked-circle-outline' : 'mdi-file-edit-outline' }}
+                              </v-icon>
+                              {{ form[i.id]?.status === 'submitted' || form[i.id]?.status === 'completed' ? 'ยืนยันแล้ว' : 'บันทึกร่าง' }}
+                            </v-chip>
+                          </div>
 
                           <!-- Cyber Attachments (แยกส่วนไฟล์แนบ และ ลิงก์อ้างอิง) -->
                           <div
@@ -692,7 +729,7 @@
                                         class="score-display-badge"
                                         :data-score="form[i.id].score"
                                       >
-                                        {{ form[i.id].score }} -
+                                        {{ form[i.id].score }} 
                                         {{ getScoreText(form[i.id].score) }}
                                       </div>
                                     </div>
@@ -1725,21 +1762,32 @@
   transition: all 0.4s;
   position: relative;
 }
-.number-sphere.is-done {
+.number-sphere.is-draft {
   background: #10b981;
   border-color: #059669;
   color: white;
   box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+}
+.number-sphere.is-submitted {
+  background: #3b82f6;
+  border-color: #2563eb;
+  color: white;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
 }
 .done-check {
   position: absolute;
   bottom: -4px;
   right: -4px;
   background: white;
-  color: #10b981;
   border-radius: 50%;
   padding: 2px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.done-check.is-draft-check {
+  color: #10b981;
+}
+.done-check.is-submitted-check {
+  color: #3b82f6;
 }
 
 /* Cyber Attachments */

@@ -256,6 +256,7 @@ function goToIndividualReport() {
   router.push({ path: '/individual-report', query })
 }
 onMounted(async () => {
+  if (!localStorage.getItem("auth_token")) { router.push('/'); return }
   await Promise.all([loadPeriods(), loadEvaluatees()])
   if (route.query.evaluatee_id && route.query.period_id) {
     selectedPeriod.value = parseInt(route.query.period_id)

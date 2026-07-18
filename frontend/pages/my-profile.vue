@@ -105,12 +105,12 @@
 
               <v-col cols="12" md="6">
                 <div class="info-group">
-                  <div class="info-label">กลุ่มงาน / ฝ่าย</div>
+                  <div class="info-label">ตำแหน่งการทำงาน</div>
                   <div v-if="!isEditing" class="info-val d-flex align-center">
-                    <v-icon size="16" color="blue-grey-lighten-1" class="me-2">mdi-account-group-outline</v-icon>
-                    {{ profile.org_group_name || 'ไม่ระบุฝ่าย' }}
+                    <v-icon size="16" color="blue-grey-lighten-1" class="me-2">mdi-briefcase-outline</v-icon>
+                    {{ profile.position || 'ไม่ระบุตำแหน่ง' }}
                   </div>
-                  <v-select v-else v-model="editForm.org_group_id" :items="orgGroups" item-title="name_th" item-value="id" placeholder="เลือกกลุ่มงาน" density="compact" variant="outlined" hide-details bg-color="white"></v-select>
+                  <v-text-field v-else v-model="editForm.position" density="compact" variant="outlined" hide-details bg-color="white" placeholder="ระบุตำแหน่งงาน"></v-text-field>
                 </div>
               </v-col>
 
@@ -267,12 +267,11 @@ const editForm = ref({
   name_th: '',
   email: '',
   department_id: null,
-  org_group_id: null
+  position: ''
 })
 
 // ตัวเลือกสำหรับ Dropdown
 const departments = ref([])
-const orgGroups = ref([])
 
 // แจ้งเตือน
 const snackbar = ref({ show: false, text: '', color: 'success' })
@@ -326,11 +325,10 @@ const fetchOptions = async (token) => {
     
     if (data.success) {
       departments.value = data.departments
-      orgGroups.value = data.orgGroups
     }
   } catch (err) {
     console.error('Failed to load options', err)
-    showToast('ไม่สามารถดึงข้อมูลแผนกและกลุ่มงานได้', 'error')
+    showToast('ไม่สามารถดึงข้อมูลแผนกได้', 'error')
   }
 }
 
@@ -340,7 +338,7 @@ const startEdit = () => {
     name_th: profile.value.name_th,
     email: profile.value.email,
     department_id: profile.value.department_id,
-    org_group_id: profile.value.org_group_id
+    position: profile.value.position
   }
   selectedFile.value = null
   previewAvatarUrl.value = null
@@ -369,7 +367,7 @@ const saveProfile = async () => {
   formData.append('name_th', editForm.value.name_th)
   formData.append('email', editForm.value.email)
   formData.append('department_id', editForm.value.department_id || '')
-  formData.append('org_group_id', editForm.value.org_group_id || '')
+  formData.append('position', editForm.value.position || '')
 
   if (selectedFile.value) {
     formData.append('avatar', selectedFile.value)

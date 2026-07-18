@@ -87,7 +87,6 @@ exports.Profile = async (req, res) => {
 
     const rows = await db("users as u")
       .leftJoin("departments as d", "u.department_id", "d.id")
-      .leftJoin("org_groups as og", "u.org_group_id", "og.id")
       .select(
         "u.id",
         "u.name_th",
@@ -95,10 +94,9 @@ exports.Profile = async (req, res) => {
         "u.role",
         "u.status",
         "u.department_id",
-        "u.org_group_id",
+        "u.position",
         "u.avatar", // <-- เพิ่มให้ดึงรูปโปรไฟล์ออกไปด้วย
         "d.name_th as department_name",
-        "og.name_th as org_group_name",
         "u.created_at",
         "u.updated_at"
       )
@@ -152,7 +150,7 @@ exports.updateProfile = async (req, res) => {
         name_th,
         email,
         department_id = null,
-        org_group_id = null,
+        position = null,
       } = req.body;
 
       if (!name_th || !email) {
@@ -177,14 +175,14 @@ exports.updateProfile = async (req, res) => {
       }
 
       const updatedDepartmentId = department_id === "" || department_id === "null" ? null : department_id;
-      const updatedOrgGroupId = org_group_id === "" || org_group_id === "null" ? null : org_group_id;
+      const updatedPosition = position === "" || position === "null" ? null : position;
 
       // เตรียม Object สำหรับอัปเดตฐานข้อมูล
       const updateData = {
         name_th,
         email,
         department_id: updatedDepartmentId,
-        org_group_id: updatedOrgGroupId,
+        position: updatedPosition,
       };
 
       // ถ้ามีการอัปโหลดไฟล์เข้ามาใหม่ ให้ใส่ชื่อไฟล์ลงไปในอัปเดตด้วย
@@ -207,7 +205,6 @@ exports.updateProfile = async (req, res) => {
       // ดึงข้อมูลโปรไฟล์ล่าสุดกลับไปแสดงที่หน้าบ้าน
       const rows = await db("users as u")
         .leftJoin("departments as d", "u.department_id", "d.id")
-        .leftJoin("org_groups as og", "u.org_group_id", "og.id")
         .select(
           "u.id",
           "u.name_th",
@@ -215,10 +212,9 @@ exports.updateProfile = async (req, res) => {
           "u.role",
           "u.status",
           "u.department_id",
-          "u.org_group_id",
+          "u.position",
           "u.avatar",
           "d.name_th as department_name",
-          "og.name_th as org_group_name",
           "u.created_at",
           "u.updated_at"
         )

@@ -527,6 +527,9 @@
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 import { useAuthStore } from "@/stores/auth";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 // ==========================================
 // 1. API Configuration & Reactive States
@@ -557,6 +560,7 @@ const currentPeriodName = computed(() => {
 // 2. Lifecycle Hook
 // ==========================================
 onMounted(async () => {
+  if (!localStorage.getItem("auth_token")) { router.push('/'); return }
   await loadPeriods();
 });
 

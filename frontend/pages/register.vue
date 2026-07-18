@@ -202,20 +202,17 @@
                   />
                 </v-col>
                 <v-col cols="12" sm="6">
-                  <v-select
-                    v-model="org_group_id"
-                    :items="orgGroups"
-                    item-title="org_groups_name"
-                    item-value="id"
-                    label="ฝ่ายการทำงาน"
+                  <v-text-field
+                    v-model="position"
+                    label="ตำแหน่งการทำงาน"
                     variant="outlined"
                     rounded="lg"
                     color="indigo"
                     bg-color="white"
-                    prepend-inner-icon="mdi-sitemap-outline"
+                    prepend-inner-icon="mdi-briefcase-outline"
                     class="premium-field"
                     hide-details="auto"
-                    :error-messages="orgErr"
+                    :error-messages="positionErr"
                   />
                 </v-col>
               </v-row>
@@ -1227,7 +1224,7 @@ const schema = yup.object({
   name_th: yup.string().required('กรุณากรอกชื่อ-นามสกุล'),
   email: yup.string().email('รูปแบบอีเมลไม่ถูกต้อง').required('กรุณากรอกอีเมล'),
   department_id: yup.number().required('กรุณาเลือกแผนก'),
-  org_group_id: yup.number().required('กรุณาเลือกฝ่าย'),
+  position: yup.string().required('กรุณากรอกตำแหน่งการทำงาน'),
   password: yup.string().min(6, 'รหัสผ่านอย่างน้อย 6 ตัว').required('กรุณากรอกรหัสผ่าน'),
   confirmPassword: yup.string()
     .oneOf([yup.ref('password')], 'รหัสผ่านไม่ตรงกัน')
@@ -1239,7 +1236,7 @@ const { handleSubmit } = useForm({ validationSchema: schema })
 const { value: name_th, errorMessage: nameErr } = useField('name_th')
 const { value: email, errorMessage: emailErr } = useField('email')
 const { value: department_id, errorMessage: deptErr } = useField('department_id')
-const { value: org_group_id, errorMessage: orgErr } = useField('org_group_id')
+const { value: position, errorMessage: positionErr } = useField('position')
 const { value: password, errorMessage: passwordErr } = useField('password')
 const { value: confirmPassword, errorMessage: confirmPasswordErr } = useField('confirmPassword')
 
@@ -1252,7 +1249,7 @@ const onSubmit = handleSubmit(async (values) => {
       name_th: values.name_th,
       email: values.email,
       department_id: values.department_id,
-      org_group_id: values.org_group_id,
+      position: values.position,
       password: values.password,
       role: 'evaluatee',
       status: 'active'

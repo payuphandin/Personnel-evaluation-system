@@ -57,6 +57,14 @@ exports.evidenceList = async (req, res) => {
     // รับ period_id จาก query ถ้าไม่มีให้ใช้ตัวที่ active
     const period_id = req.query.period_id;
 
+    const now = new Date();
+    try {
+      await db("evaluation_periods")
+        .where("is_active", 1)
+        .andWhere("end_date", "<", now)
+        .update({ is_active: 0 });
+    } catch {}
+
     let period;
     if (period_id) {
       period = await db("evaluation_periods").where("id", period_id).first();
@@ -146,8 +154,16 @@ exports.evidenceList = async (req, res) => {
 };
 
 exports.listPeriods = async (req, res) => {
+  try {
+    const now = new Date();
+    await db("evaluation_periods")
+      .where("is_active", 1)
+      .andWhere("end_date", "<", now)
+      .update({ is_active: 0 });
+  } catch {}
+
   const rows = await db("evaluation_periods")
-    .select("id", "name_th")
+    .select("id", "name_th", "is_active", "start_date", "end_date")
     .orderBy("id", "desc");
 
   res.json(rows);

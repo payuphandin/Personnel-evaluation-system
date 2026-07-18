@@ -5,6 +5,12 @@ const path = require("path");
 // ดึงรอบการประเมินทั้งหมด
 exports.list = async (req, res) => {
   try {
+    const now = new Date();
+    await db("evaluation_periods")
+      .where("is_active", 1)
+      .andWhere("end_date", "<", now)
+      .update({ is_active: 0 });
+
     const data = await db("evaluation_periods")
       .select("*")
       .orderBy("id", "desc");
@@ -23,17 +29,15 @@ exports.list_evaluatee = async (req, res) => {
     // 1. ดึงข้อมูล User ปกติ
     let data = await db("users as u")
       .leftJoin("departments as d", "d.id", "u.department_id")
-      .leftJoin("org_groups as g", "g.id", "u.org_group_id")
       .select(
         "u.id",
         "u.name_th",
         "u.email",
         "u.avatar",
         "u.role",
+        "u.position",
         "d.id as department_id",
         "d.name_th as department_name",
-        "g.id as org_group_id",
-        "g.name_th as org_group_name",
       )
       .where("u.role", role)
       .orderBy("u.name_th", "asc");
@@ -74,17 +78,15 @@ exports.list_evaluator = async (req, res) => {
   try {
     const data = await db("users as u")
       .leftJoin("departments as d", "d.id", "u.department_id")
-      .leftJoin("org_groups as g", "g.id", "u.org_group_id")
       .select(
         "u.id",
         "u.name_th",
         "u.email",
         "u.avatar",
         "u.role",
+        "u.position",
         "d.id as department_id",
         "d.name_th as department_name",
-        "g.id as org_group_id",
-        "g.name_th as org_group_name",
       )
       .where("u.role", "evaluator")
       .orderBy("u.name_th", "asc");
@@ -172,8 +174,10 @@ exports.list_assignments = async (req, res) => {
         "p.buddhist_year",
         "evalr.name_th as evaluator_name",
         "evalr.avatar as evaluator_avatar",
+        "evalr.position as evaluator_position",
         "evale.name_th as evaluatee_name",
         "evale.avatar as evaluatee_avatar",
+        "evale.position as evaluatee_position",
         "d.name_th as department_name",
 
         "a.created_at",
@@ -214,8 +218,8 @@ exports.create_assignments = async (req, res) => {
 exports.update_assignments = async (req, res) => {
   try {
     const { id } = req.params;
-    // 🟢 1. รับค่า evaluator_role เพิ่มเข้ามา
-    const { period_id, evaluator_id, evaluatee_id, dept_id, evaluator_role } = req.body; 
+    // 🟢 1. รับค่า evaluator_role และ evaluator_status เพิ่มเข้ามา
+    const { period_id, evaluator_id, evaluatee_id, dept_id, evaluator_role, evaluator_status } = req.body; 
     
     await db("assignments").where({ id }).update({
       period_id,
@@ -223,6 +227,7 @@ exports.update_assignments = async (req, res) => {
       evaluatee_id,
       dept_id,
       evaluator_role, // 🟢 2. สั่ง update ลงตาราง
+      evaluator_status,
     });
 
     res.json({ message: "updated" });
@@ -463,7 +468,7 @@ exports.update_user = async (req, res, next) => {
     const id = req.params.id;
     if (!id) return res.status(400).json({ success: false, message: "Missing user ID" });
 
-    const { name_th, email, role, password ,status,department_id,org_group_id} = req.body || {};
+    const { name_th, email, role, password ,status,department_id,position} = req.body || {};
     const payload = {};
 
     // 1) เก็บเฉพาะฟิลด์ที่ส่งเข้ามา (ไม่บังคับต้องส่งครบ)
@@ -472,7 +477,7 @@ exports.update_user = async (req, res, next) => {
     if (role != null) payload.role = role;
     if (status != null) payload.status = status;
     if (department_id != null) payload.department_id = department_id;
-    if (org_group_id != null) payload.org_group_id = org_group_id;
+    if (position != null) payload.position = position;
     
 
     // 2) ถ้าเปลี่ยนรหัสผ่าน -> แฮชใหม่
@@ -500,7 +505,7 @@ exports.update_user = async (req, res, next) => {
 
     // 5) อ่านข้อมูลล่าสุดกลับเพื่อส่งให้ client (ไม่รวม password_hash)
     const updated = await db("users")
-      .select("id", "name_th", "email", "role", "created_at","department_id","org_group_id")
+      .select("id", "name_th", "email", "role", "created_at","department_id","position")
       .where({ id })
       .first();
 
@@ -540,7 +545,7 @@ exports.results = async (req, res) => {
         period_id,
         evaluator_id,
       })
-      .select("indicator_id", "score", "value_yes_no", "notes");
+      .select("indicator_id", "score", "value_yes_no", "notes", "status");
 
     res.json({ data });
   } catch (error) {
@@ -1057,7 +1062,6 @@ exports.export_overview_report = async (req, res) => {
     const assignmentRows = await db("assignments as a")
       .join("users as evale", "evale.id", "a.evaluatee_id")
       .leftJoin("departments as d", "d.id", "evale.department_id")
-      .leftJoin("org_groups as og", "og.id", "evale.org_group_id")
       .where("a.period_id", period.id)
       .select(
         "a.evaluatee_id",
@@ -1070,7 +1074,7 @@ exports.export_overview_report = async (req, res) => {
         "evale.name_th as evaluatee_name",
         "evale.email as evaluatee_email",
         "d.name_th as department_name",
-        "og.name_th as org_group_name"
+        "evale.position"
       );
 
     const submissionRows = await db("self_eval_submissions as ses")
@@ -1095,9 +1099,8 @@ exports.export_overview_report = async (req, res) => {
     const evaluateeRows = participantIds.length
       ? await db("users as u")
           .leftJoin("departments as d", "d.id", "u.department_id")
-          .leftJoin("org_groups as og", "og.id", "u.org_group_id")
           .whereIn("u.id", participantIds)
-          .select("u.id", "u.name_th as evaluatee_name", "u.email as evaluatee_email", "d.name_th as department_name", "og.name_th as org_group_name")
+          .select("u.id", "u.name_th as evaluatee_name", "u.email as evaluatee_email", "d.name_th as department_name", "u.position")
       : [];
 
     const submissionMap = new Map(submissionRows.map((row) => [row.evaluatee_id, row]));
@@ -1269,7 +1272,7 @@ exports.export_overview_report = async (req, res) => {
       card(x, y, cardWidth, 9, colorMap[item.stage] || "#7C3AED", colorMap[item.stage] || "#7C3AED");
       pill(x + cardWidth - 118, y + 14, stageMeta[item.stage]?.label || "ยังไม่เริ่ม", stageMeta[item.stage]?.fill || "#64748B");
       doc.fillColor("#0F172A").fontSize(13.5).text(item.evaluatee_name || "-", x + 14, y + 16, { width: cardWidth - 140 });
-      doc.fillColor("#64748B").fontSize(9).text(`${item.department_name || "ไม่ระบุแผนก"} · ${item.org_group_name || "ไม่ระบุฝ่าย"}`, x + 14, y + 35, { width: cardWidth - 28 });
+      doc.fillColor("#64748B").fontSize(9).text(`${item.department_name || "ไม่ระบุแผนก"} · ${item.position || "ไม่ระบุตำแหน่ง"}`, x + 14, y + 35, { width: cardWidth - 28 });
       doc.fillColor("#475569").fontSize(9).text(`การประเมินตนเอง: ${item.self_status === "submitted" ? "ส่งแล้ว" : item.self_status === "draft" ? "ฉบับร่าง" : "รอดำเนินการ"}`, x + 14, y + 54, { width: 170 });
       doc.fillColor("#475569").fontSize(9).text(`กรรมการ: ${item.stage === "completed" ? "ครบแล้ว" : item.stage === "committee_in_progress" ? "กำลังประเมิน" : "รอดำเนินการ"}`, x + 14, y + 68, { width: 170 });
       doc.fillColor("#475569").fontSize(9).text(`อัปเดตล่าสุด: ${fmtDateTime(item.last_activity_at)}`, x + 14, y + 82, { width: cardWidth - 28 });
@@ -1344,7 +1347,7 @@ exports.remove_cat = async (req, res) => {
 // 5.1.10 แสดงผลสรุปการประเมินรายกรรมการ (ประเมินผู้รับการประเมินแต่ละคน)
 exports.evaluator_tracking = async (req, res) => {
   try {
-    const { search = "", department_id = "", org_group_id = "", period_id } = req.query || {};
+    const { search = "", department_id = "", position = "", period_id } = req.query || {};
     let targetPeriodId = Number(period_id);
 
     if (!targetPeriodId) {
@@ -1373,7 +1376,6 @@ exports.evaluator_tracking = async (req, res) => {
       .join("users as evalr", "evalr.id", "a.evaluator_id")
       .join("users as evale", "evale.id", "a.evaluatee_id")
       .leftJoin("departments as d", "d.id", "evalr.department_id")
-      .leftJoin("org_groups as og", "og.id", "evalr.org_group_id")
       .select(
         "a.id as assignment_id",
         "a.period_id",
@@ -1389,12 +1391,12 @@ exports.evaluator_tracking = async (req, res) => {
         "evale.name_th as evaluatee_name",
         "evale.email as evaluatee_email",
         "d.name_th as department_name",
-        "og.name_th as org_group_name"
+        "evalr.position as evaluator_position"
       )
       .where("a.period_id", targetPeriodId);
 
     if (department_id) assignmentsQuery.where("evalr.department_id", Number(department_id));
-    if (org_group_id) assignmentsQuery.where("evalr.org_group_id", Number(org_group_id));
+    if (position) assignmentsQuery.where("evalr.position", "like", `%${position}%`);
     if (search.trim()) {
       const like = `%${search.trim().toLowerCase()}%`;
       assignmentsQuery.where(function () {
@@ -1437,7 +1439,7 @@ exports.evaluator_tracking = async (req, res) => {
           evaluator_name: asg.evaluator_name,
           evaluator_email: asg.evaluator_email,
           department_name: asg.department_name,
-          org_group_name: asg.org_group_name,
+          position: asg.evaluator_position,
           total_assignments: 0,
           completed_assignments: 0,
           in_progress_assignments: 0,
@@ -1525,7 +1527,7 @@ exports.evaluator_tracking = async (req, res) => {
 
 exports.evaluatee_tracking = async (req, res) => {
   try {
-    const { search = "", department_id = "", org_group_id = "", period_id } = req.query || {};
+    const { search = "", department_id = "", position = "", period_id } = req.query || {};
     let targetPeriodId = Number(period_id);
 
     if (!targetPeriodId) {
@@ -1552,18 +1554,17 @@ exports.evaluatee_tracking = async (req, res) => {
 
     const evaluateeQuery = db("users as u")
       .leftJoin("departments as d", "d.id", "u.department_id")
-      .leftJoin("org_groups as og", "og.id", "u.org_group_id")
       .select(
         "u.id",
         "u.name_th as evaluatee_name",
         "u.email as evaluatee_email",
         "d.name_th as department_name",
-        "og.name_th as org_group_name"
+        "u.position"
       )
       .where("u.role", "evaluatee");
 
     if (department_id) evaluateeQuery.where("u.department_id", Number(department_id));
-    if (org_group_id) evaluateeQuery.where("u.org_group_id", Number(org_group_id));
+    if (position) evaluateeQuery.where("u.position", "like", `%${position}%`);
     if (search.trim()) {
       const like = `%${search.trim().toLowerCase()}%`;
       evaluateeQuery.where(function () {
@@ -1702,7 +1703,7 @@ exports.evaluatee_tracking = async (req, res) => {
         evaluatee_name: user.evaluatee_name,
         evaluatee_email: user.evaluatee_email,
         department_name: user.department_name,
-        org_group_name: user.org_group_name,
+        position: user.position,
         self_eval_status: selfSubmission.status,
         self_eval_signature: selfSubmission.signature,
         self_eval_signed_at: selfSubmission.signed_at,
@@ -1918,7 +1919,6 @@ exports.individual_report = async (req, res) => {
 
     const evaluatee = await db("users as u")
       .leftJoin("departments as d", "d.id", "u.department_id")
-      .leftJoin("org_groups as og", "og.id", "u.org_group_id")
       .select(
         "u.id",
         "u.name_th as evaluatee_name",
@@ -1926,7 +1926,7 @@ exports.individual_report = async (req, res) => {
         "u.role",
         "u.status as user_status",
         "d.name_th as department_name",
-        "og.name_th as org_group_name"
+        "u.position"
       )
       .where("u.id", evaluatee_id)
       .first();

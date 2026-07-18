@@ -111,8 +111,8 @@
                 {{ report.evaluatee?.department_name || 'ไม่ระบุแผนก' }}
               </v-chip>
               <v-chip size="small" color="white" variant="flat" class="font-weight-bold text-indigo-darken-4">
-                <v-icon start size="14">mdi-account-group-outline</v-icon>
-                {{ report.evaluatee?.org_group_name || 'ไม่ระบุฝ่าย' }}
+                <v-icon start size="14">mdi-briefcase-outline</v-icon>
+                {{ report.evaluatee?.position || 'ไม่ระบุตำแหน่ง' }}
               </v-chip>
             </div>
           </div>
@@ -481,6 +481,7 @@ function printReport() {
 }
 
 onMounted(async () => {
+  if (!localStorage.getItem("auth_token")) { router.push('/'); return }
   await Promise.all([loadPeriods(), loadEvaluatees()])
 
   if (route.query.period_id) selectedPeriod.value = Number(route.query.period_id)

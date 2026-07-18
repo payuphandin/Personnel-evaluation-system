@@ -18,6 +18,7 @@ exports.myAssignments = async (req, res) => {
         "a.evaluatee_id",
         "a.evaluator_role",
         "u.name_th as evaluatee_name",
+        "u.position as evaluatee_position",
         "d.name_th as dept_name",
         "p.name_th as period_name",
         "a.evaluator_status",
@@ -119,7 +120,8 @@ exports.results = async (req, res) => {
         "indicator_id",
         "score",
         "value_yes_no",
-        "notes"
+        "notes",
+        "status"
       );
 
     res.json({ data });

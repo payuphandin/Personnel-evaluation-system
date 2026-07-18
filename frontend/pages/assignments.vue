@@ -104,7 +104,12 @@
                       <div class="text-subtitle-2 font-weight-black text-indigo-darken-4 line-height-1">
                         {{ evalr.evaluator_name }}
                       </div>
-                      <div class="mt-1 d-flex align-center justify-center justify-sm-start">
+                      <div v-if="evalr.evaluator_position"
+                        class="text-caption font-weight-bold text-teal mt-0.5 d-flex align-center justify-center justify-sm-start">
+                        <v-icon size="11" class="me-1" color="teal">mdi-briefcase-outline</v-icon>
+                        {{ evalr.evaluator_position }}
+                      </div>
+                      <div class="mt-1 d-flex align-center justify-center justify-sm-start flex-wrap gap-2">
                         <v-chip size="x-small" :color="getStatusBadge(evalr.evaluator_status, 'evaluator')
                             .color
                           " variant="flat" density="compact" class="font-weight-bold">
@@ -117,6 +122,12 @@
                               .text
                           }}
                         </v-chip>
+                        <div v-if="evalr.evaluator_signature" class="d-flex flex-column ms-2 align-center">
+                          <img :src="evalr.evaluator_signature.startsWith('data:') || evalr.evaluator_signature.startsWith('http') ? evalr.evaluator_signature : 'http://localhost:7000' + evalr.evaluator_signature" alt="signature" style="height: 24px; object-fit: contain; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));" />
+                          <span v-if="evalr.evaluator_signed_at" class="text-caption text-grey mt-1" style="font-size: 9px !important; line-height: 1;">
+                            {{ new Date(evalr.evaluator_signed_at).toLocaleDateString('th-TH') }} {{ new Date(evalr.evaluator_signed_at).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'}) }}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -126,9 +137,12 @@
               <!-- Flow Connection (จุดเชื่อมโยง) -->
               <div class="connection-flow text-center my-auto align-self-center py-4 py-sm-0"
                 style="flex: 0.8; min-width: 150px">
-                <div class="period-pill mb-2">
+                <div class="period-pill mb-1">
                   <v-icon size="12" class="me-1 text-white">mdi-calendar-star</v-icon>
-                  <span>{{ group.period_name }}</span>
+                  <span>{{ group.period_name }} {{ group.buddhist_year ? `ปี ${group.buddhist_year}` : '' }}</span>
+                </div>
+                <div v-if="group.created_at" class="text-caption text-grey-darken-1 mb-2 font-weight-medium" style="font-size: 10px !important;">
+                  <v-icon size="10" class="me-1">mdi-clock-time-four-outline</v-icon>สร้าง: {{ new Date(group.created_at).toLocaleDateString('th-TH') }}
                 </div>
                 <div class="flow-line-wrap">
                   <div class="flow-line"></div>
@@ -160,19 +174,29 @@
                       <v-icon size="12" class="me-1">mdi-office-building-outline</v-icon>
                       {{ group.department_name || "ไม่ระบุแผนก" }}
                     </div>
-                    <div class="mt-1 d-flex align-center justify-center justify-sm-end">
-                      <v-chip size="small" :color="getStatusBadge(group.self_eval_status, 'evaluatee')
-                          .color
-                        " variant="flat" density="compact" class="font-weight-bold">
-                        <v-icon start size="14">{{
-                          getStatusBadge(group.self_eval_status, "evaluatee")
-                            .icon
-                        }}</v-icon>
-                        {{
-                          getStatusBadge(group.self_eval_status, "evaluatee")
-                            .text
-                        }}
-                      </v-chip>
+                    <div v-if="group.evaluatee_position"
+                      class="text-caption font-weight-bold text-teal mt-1 d-flex align-center justify-center justify-sm-end">
+                      <v-icon size="12" class="me-1" color="teal">mdi-briefcase-outline</v-icon>
+                      {{ group.evaluatee_position }}
+                    </div>
+                    <div class="mt-1 d-flex align-center justify-center justify-sm-end flex-wrap gap-2">
+                      <div class="d-flex flex-column align-end">
+                        <v-chip size="small" :color="getStatusBadge(group.self_eval_status, 'evaluatee')
+                            .color
+                          " variant="flat" density="compact" class="font-weight-bold">
+                          <v-icon start size="14">{{
+                            getStatusBadge(group.self_eval_status, "evaluatee")
+                              .icon
+                          }}</v-icon>
+                          {{
+                            getStatusBadge(group.self_eval_status, "evaluatee")
+                              .text
+                          }}
+                        </v-chip>
+                        <span v-if="group.self_eval_signed_at" class="text-caption text-grey mt-1" style="font-size: 9px !important; line-height: 1;">
+                          ส่งเมื่อ: {{ new Date(group.self_eval_signed_at).toLocaleDateString('th-TH') }} {{ new Date(group.self_eval_signed_at).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'}) }}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -253,7 +277,7 @@
                   placeholder="เลือกผู้รับการประเมิน" variant="outlined" rounded="lg" color="cyan-darken-2"
                   bg-color="white" density="comfortable" hide-details class="premium-input">
                   <template #item="{ item, props }">
-                    <v-list-item v-bind="props">
+                    <v-list-item v-bind="props" :subtitle="`${item.raw.department_name || 'ไม่ระบุแผนก'} · ${item.raw.position || 'ไม่ระบุตำแหน่ง'}`">
                       <template #prepend>
                         <v-avatar size="28" color="cyan-darken-2" class="mr-3 text-white shadow-sm font-weight-bold"
                           style="font-size: 12px">
@@ -278,7 +302,7 @@
                   color="amber-darken-3" bg-color="amber-lighten-5" density="comfortable" hide-details
                   class="premium-input eval-input">
                   <template #item="{ item, props }">
-                    <v-list-item v-bind="props">
+                    <v-list-item v-bind="props" :subtitle="`${item.raw.department_name || 'ไม่ระบุแผนก'} · ${item.raw.position || 'ไม่ระบุตำแหน่ง'}`">
                       <template #prepend>
                         <v-avatar size="28" color="amber-darken-3" class="mr-3 text-white shadow-sm font-weight-bold"
                           style="font-size: 12px">
@@ -303,7 +327,7 @@
                   color="teal-darken-2" bg-color="white" density="comfortable" hide-details multiple chips
                   closable-chips class="premium-input">
                   <template #item="{ item, props }">
-                    <v-list-item v-bind="props">
+                    <v-list-item v-bind="props" :subtitle="`${item.raw.department_name || 'ไม่ระบุแผนก'} · ${item.raw.position || 'ไม่ระบุตำแหน่ง'}`">
                       <template #prepend>
                         <v-avatar size="28" color="teal-darken-2" class="mr-3 text-white shadow-sm font-weight-bold"
                           style="font-size: 12px">
@@ -359,18 +383,31 @@
             <v-col cols="12" md="6" class="mb-3">
               <v-select v-model="editForm.evaluator_id" :items="evaluators" item-title="name_th" item-value="id"
                 label="ผู้ประเมิน" variant="outlined" rounded="lg" color="indigo" bg-color="white"
-                prepend-inner-icon="mdi-account-tie" density="comfortable" hide-details class="premium-input" />
+                prepend-inner-icon="mdi-account-tie" density="comfortable" hide-details class="premium-input">
+                <template #item="{ item, props }">
+                  <v-list-item v-bind="props" :subtitle="`${item.raw.department_name || 'ไม่ระบุแผนก'} · ${item.raw.position || 'ไม่ระบุตำแหน่ง'}`" />
+                </template>
+              </v-select>
             </v-col>
             <v-col cols="12" md="6" class="mb-3">
               <v-select v-model="editForm.evaluatee_id" :items="evaluatees" item-title="name_th" item-value="id"
                 label="ผู้ถูกประเมิน" variant="outlined" rounded="lg" color="cyan-darken-2" bg-color="white"
-                prepend-inner-icon="mdi-account" density="comfortable" hide-details class="premium-input" />
+                prepend-inner-icon="mdi-account" density="comfortable" hide-details class="premium-input">
+                <template #item="{ item, props }">
+                  <v-list-item v-bind="props" :subtitle="`${item.raw.department_name || 'ไม่ระบุแผนก'} · ${item.raw.position || 'ไม่ระบุตำแหน่ง'}`" />
+                </template>
+              </v-select>
             </v-col>
             <!-- 🟢 เพิ่มใน dialog แก้ไข ต่อจาก v-col evaluatee_id -->
-            <v-col cols="12" class="mb-3">
+            <v-col cols="12" md="6" class="mb-3">
               <v-select v-model="editForm.evaluator_role" :items="roleOptions" item-title="label" item-value="value"
                 label="บทบาทผู้ประเมิน" variant="outlined" rounded="lg" color="amber-darken-3" bg-color="white"
                 prepend-inner-icon="mdi-shield-crown" density="comfortable" hide-details class="premium-input" />
+            </v-col>
+            <v-col cols="12" md="6" class="mb-3">
+              <v-select v-model="editForm.evaluator_status" :items="statusOptions" item-title="label" item-value="value"
+                label="สถานะการประเมิน" variant="outlined" rounded="lg" color="indigo" bg-color="white"
+                prepend-inner-icon="mdi-progress-clock" density="comfortable" hide-details class="premium-input" />
             </v-col>
           </v-row>
         </div>
@@ -1024,12 +1061,19 @@ const editForm = ref({
   evaluatee_id: null,
   dept_id: null,
   evaluator_role: "chairman",
+  evaluator_status: "pending",
 });
 
 // 🟢 เพิ่มบรรทัดนี้
 const roleOptions = [
   { label: "ประธาน (chairman)", value: "chairman" },
   { label: "กรรมการร่วม (joint)", value: "joint" },
+];
+
+const statusOptions = [
+  { label: "รอดำเนินการ (pending)", value: "pending" },
+  { label: "กำลังดำเนินการ (evaluating)", value: "evaluating" },
+  { label: "ประเมินแล้ว (completed)", value: "completed" },
 ];
 
 const availableEvaluatees = computed(() => {
@@ -1066,12 +1110,16 @@ const groupedAssignments = computed(() => {
         key: key,
         period_id: item.period_id,
         period_name: item.period_name,
+        buddhist_year: item.buddhist_year,
         evaluatee_id: item.evaluatee_id,
         evaluatee_name: item.evaluatee_name,
         evaluatee_avatar: item.evaluatee_avatar,
+        evaluatee_position: item.evaluatee_position,
         department_name: item.department_name,
         dept_id: item.dept_id,
         self_eval_status: item.self_eval_status,
+        self_eval_signed_at: item.self_eval_signed_at,
+        created_at: item.created_at,
         evaluators: [],
       };
     }
@@ -1081,8 +1129,11 @@ const groupedAssignments = computed(() => {
       evaluator_id: item.evaluator_id,
       evaluator_name: item.evaluator_name,
       evaluator_avatar: item.evaluator_avatar,
+      evaluator_position: item.evaluator_position,
       evaluator_role: item.evaluator_role,
       evaluator_status: item.evaluator_status,
+      evaluator_signature: item.evaluator_signature,
+      evaluator_signed_at: item.evaluator_signed_at,
       original: item,
     });
   });

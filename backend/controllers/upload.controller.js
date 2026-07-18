@@ -1,7 +1,6 @@
 const path = require("path");
 const fs = require("fs");
 const attRepo = require("../repositories/attachments");
-const asgRepo = require("../repositories/assignments");
 const mapRepo = require("../repositories/indicatorEvidence");
 const db = require("../db/knex");
 
@@ -18,11 +17,22 @@ function relFromUploads(absPath) {
     .replace(/\\/g, "/");
 }
 async function isPeriodActive(period_id) {
+  const now = new Date();
+  try {
+    await db("evaluation_periods")
+      .where("is_active", 1)
+      .andWhere("end_date", "<", now)
+      .update({ is_active: 0 });
+  } catch {}
+
   const row = await db("evaluation_periods")
     .where({ id: period_id, is_active: 1 })
     .first();
-  // return row or undefined หมายความว่า period_id ที่ส่งมา ต้องเป็นเลข และต้องมีในตาราง evaluation_periods และ is_active=1  เพื่อให้ period นั้นเปิดอยู่
-  return !!row;
+  if (!row) return false;
+
+  const start = new Date(row.start_date);
+  const end = new Date(row.end_date);
+  return now >= start && now <= end;
 }
 
 // =====================================================================
@@ -94,17 +104,6 @@ exports.uploadEvidence = async (req, res, next) => {
       mime_type = req.file.mimetype;
       size_bytes = req.file.size;
     }
-
-    // ต้องถูก assign ใน period นั้น
-    const okAssign = await asgRepo.hasEvaluateeInPeriod({
-      period_id: Number(period_id),
-      evaluatee_id,
-    });
-    if (!okAssign)
-      return res.status(400).json({
-        success: false,
-        message: "evaluatee not assigned in the period",
-      });
 
     // period ต้องเปิดอยู่
     if (!(await isPeriodActive(Number(period_id)))) {

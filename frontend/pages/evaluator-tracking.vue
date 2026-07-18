@@ -132,8 +132,8 @@
                     {{ ev.department_name || 'ไม่ระบุแผนก' }}
                   </v-chip>
                   <v-chip size="small" color="white" variant="flat" class="mini-chip text-indigo-darken-4">
-                    <v-icon start size="14">mdi-account-group-outline</v-icon>
-                    {{ ev.org_group_name || 'ไม่ระบุฝ่าย' }}
+                    <v-icon start size="14">mdi-briefcase-outline</v-icon>
+                    {{ ev.position || 'ไม่ระบุตำแหน่ง' }}
                   </v-chip>
                 </div>
               </div>
@@ -223,8 +223,8 @@
             </v-col>
             <v-col cols="12" md="4">
               <div class="detail-metric">
-                <div class="detail-metric-label">ฝ่าย</div>
-                <div class="detail-metric-value">{{ selectedEvaluator?.org_group_name || 'ไม่ระบุ' }}</div>
+                <div class="detail-metric-label">ตำแหน่ง</div>
+                <div class="detail-metric-value">{{ selectedEvaluator?.position || 'ไม่ระบุ' }}</div>
               </div>
             </v-col>
             <v-col cols="12" md="4">
@@ -309,7 +309,7 @@ const filteredEvaluators = computed(() => {
       ev.evaluator_name,
       ev.evaluator_email,
       ev.department_name,
-      ev.org_group_name,
+      ev.position,
       ...(ev.assignments || []).map(a => `${a.evaluatee_name} ${a.evaluatee_email}`),
     ].join(' ').toLowerCase()
     return hay.includes(q)
@@ -383,6 +383,7 @@ function openDetail(item) {
 }
 
 onMounted(async () => {
+  if (!localStorage.getItem("auth_token")) { router.push('/'); return }
   await loadPeriods()
   await fetchTracking()
 })

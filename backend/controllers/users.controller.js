@@ -64,7 +64,6 @@ exports.list_all = async (req, res, next) => {
   try {
     const rows = await db("users as u")
       .leftJoin("departments as d", "u.department_id", "d.id")
-      .leftJoin("org_groups as o", "u.org_group_id", "o.id")
       .select(
         "u.id",
         "u.email",
@@ -73,9 +72,9 @@ exports.list_all = async (req, res, next) => {
         "u.role",
         "u.status",
         "u.created_at",
+        "u.position",
 
-        "d.name_th as department_name",
-        "o.name_th as org_group_name"
+        "d.name_th as department_name"
       )
       .orderBy("u.id", "desc");
 
@@ -122,7 +121,7 @@ exports.get = async (req, res, next) => {
  */
 exports.create = async (req, res, next) => {
   try {
-    const { name_th, email, password,department_id,org_group_id, role = "evaluatee" } = req.body || {};
+    const { name_th, email, password,department_id,position, role = "evaluatee" } = req.body || {};
 
     // 1) ตรวจว่ามีฟิลด์จำเป็นไหม
     if (!name_th || !email || !password) {
@@ -149,10 +148,10 @@ exports.create = async (req, res, next) => {
       password_hash,
       role,
       department_id,
-      org_group_id
+      position
     });
     const created = await db("users")
-      .select("id", "name_th", "email", "role", "created_at","department_id","org_group_id")
+      .select("id", "name_th", "email", "role", "created_at","department_id","position")
       .where({ id: insertId })
       .first();
 

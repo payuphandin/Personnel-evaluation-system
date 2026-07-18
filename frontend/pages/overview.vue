@@ -543,7 +543,9 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 // ===== STATE MANAGEMENT =====
 const dashboardData = ref({ activePeriod: null })
 const summary = ref({ totalEvaluatees: 0, totalEvaluators: 0, totalEvidences: 0, evaluationProgress: 0, averageScore: 0 })
@@ -591,6 +593,7 @@ const getAuthHeaders = () => {
 }
 
 onMounted(async () => {
+  if (!localStorage.getItem("auth_token")) { router.push('/'); return }
   await fetchDashboardData()
   await loadDepartments()
 })

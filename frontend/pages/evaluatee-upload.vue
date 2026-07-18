@@ -53,7 +53,7 @@
         <div class="pa-6">
           <v-row align="center">
             <v-col cols="12" md="6">
-              <v-select v-model="selectedPeriod" :items="periods" item-title="name_th" item-value="id"
+              <v-select v-model="selectedPeriod" :items="periods" item-title="display_name" item-value="id"
                 placeholder="เลือกปีการศึกษา / รอบการประเมิน" prepend-inner-icon="mdi-calendar-search" variant="outlined"
                 rounded="xl" color="indigo-darken-2" hide-details @update:modelValue="loadData" density="comfortable" class="neo-input" />
             </v-col>
@@ -78,6 +78,17 @@
 
       <!-- ===== MAIN CONTENT ===== -->
       <div v-if="selectedPeriod">
+
+        <!-- Alert when period is closed -->
+        <v-alert
+          v-if="isPeriodClosed"
+          type="error"
+          variant="tonal"
+          class="mb-6 rounded-xl anim-rise-2 font-weight-bold"
+          icon="mdi-clock-alert-outline"
+        >
+          รอบการประเมินนี้ปิดการใช้งานแล้ว หรือเลยกำหนดเวลาการส่งเอกสารหลักฐานแล้ว (ไม่สามารถอัปโหลด แก้ไข หรือลบข้อมูลได้)
+        </v-alert>
 
         <!-- Upload Section Title -->
         <div class="section-badge anim-rise-2 mb-5">
@@ -131,14 +142,14 @@
                     <v-text-field v-else :model-value="item.file_name || 'ไฟล์หลักฐานแนบ'" readonly density="compact" hide-details variant="outlined" rounded="lg" color="indigo" prepend-inner-icon="mdi-file-document-outline" class="neo-input" />
                   </div>
                   <div v-else class="d-flex flex-column gap-2 my-3" style="min-width: 260px;">
-                    <v-btn-toggle v-model="item.uploadMode" mandatory color="indigo-accent-2" density="compact" class="elevation-0 rounded-lg border bg-white" :disabled="item.uploaded">
+                    <v-btn-toggle v-model="item.uploadMode" mandatory color="indigo-accent-2" density="compact" class="elevation-0 rounded-lg border bg-white" :disabled="item.uploaded || isPeriodClosed">
                       <v-btn value="file" size="small" class="flex-grow-1 font-weight-bold"><v-icon start size="16">mdi-cloud-upload-outline</v-icon> ไฟล์</v-btn>
                       <v-btn value="link" size="small" class="flex-grow-1 font-weight-bold"><v-icon start size="16">mdi-link-variant</v-icon> ลิงก์</v-btn>
                     </v-btn-toggle>
                     <v-file-input v-if="item.uploadMode === 'file'" v-model="item.file" density="compact" placeholder="อัปโหลดไฟล์..." hide-details
                       variant="outlined" rounded="lg" accept=".pdf,.jpg,.png,.doc,.docx" color="indigo"
-                      prepend-inner-icon="mdi-paperclip" class="neo-input" :disabled="item.uploaded" />
-                    <v-text-field v-else v-model="item.link_url" density="compact" placeholder="วางลิงก์ (URL) ที่นี่..." hide-details variant="outlined" rounded="lg" color="indigo" prepend-inner-icon="mdi-web" class="neo-input" :disabled="item.uploaded" />
+                      prepend-inner-icon="mdi-paperclip" class="neo-input" :disabled="item.uploaded || isPeriodClosed" />
+                    <v-text-field v-else v-model="item.link_url" density="compact" placeholder="วางลิงก์ (URL) ที่นี่..." hide-details variant="outlined" rounded="lg" color="indigo" prepend-inner-icon="mdi-web" class="neo-input" :disabled="item.uploaded || isPeriodClosed" />
                   </div>
                 </template>
 
@@ -150,7 +161,7 @@
                 </template>
 
                 <template #item.action="{ item }">
-                  <v-btn v-if="item.uploaded" icon variant="text" color="error" size="small" class="del-btn" @click="deleteFile(item)">
+                  <v-btn v-if="item.uploaded" icon variant="text" color="error" size="small" class="del-btn" @click="deleteFile(item)" :disabled="isPeriodClosed">
                     <v-icon size="20">mdi-trash-can-outline</v-icon>
                     <v-tooltip activator="parent" location="top">ลบข้อมูล</v-tooltip>
                   </v-btn>
@@ -162,7 +173,7 @@
 
         <!-- Submit Button -->
         <div class="text-center mb-14 anim-rise-4">
-          <button class="submit-btn" @click="uploadAll" :disabled="uploadingAll">
+          <button class="submit-btn" @click="uploadAll" :disabled="uploadingAll || isPeriodClosed">
             <span class="btn-bg"></span>
             <span class="btn-content">
               <v-progress-circular v-if="uploadingAll" indeterminate size="22" width="2" color="white" class="me-3" />
@@ -664,6 +675,11 @@ const headers = [
 // --- Computed Properties ---
 const uploadedCount = computed(() => evidences.value.filter(e => e.uploaded).length)
 
+const isPeriodClosed = computed(() => {
+  const p = periods.value.find(x => x.id === selectedPeriod.value);
+  return p ? p.is_closed : false;
+})
+
 function getTopicProgress(topicCode) {
   const items = getEvidencesByTopic(topicCode)
   if (items.length === 0) return 0
@@ -678,7 +694,15 @@ async function loadPeriods() {
     const { data } = await $api.get('/api/evaluatee/periods-list', {
       headers: { Authorization: `Bearer ${token}` }
     })
-    periods.value = data
+    periods.value = data.map(p => {
+      const now = new Date();
+      const isClosed = p.is_active === 0 || (p.start_date && now < new Date(p.start_date)) || (p.end_date && now > new Date(p.end_date));
+      return {
+        ...p,
+        is_closed: isClosed,
+        display_name: isClosed ? `${p.name_th} (ปิดใช้งาน)` : p.name_th
+      }
+    })
   } catch (e) {
     if (e.response?.status === 401) { localStorage.clear(); router.push('/login') }
   }
@@ -787,7 +811,7 @@ async function uploadAll() {
       }
 
       if (item.id) {
-        await $api.put(`/api/upload/evaluatee_upload/${item.id}/file`, fd, {
+        await $api.put(`/api/upload/${item.id}/file`, fd, {
           headers: { "Content-Type": "multipart/form-data", "Authorization": `Bearer ${token}` }
         });
       } else {
@@ -819,7 +843,7 @@ async function deleteFile(item) {
 }
 
 onMounted(async () => {
-  if (!localStorage.getItem("auth_token")) { router.push('/login'); return }
+  if (!localStorage.getItem("auth_token")) { router.push('/'); return }
   await loadPeriods()
 })
 </script>
