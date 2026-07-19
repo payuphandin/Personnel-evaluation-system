@@ -76,4 +76,7 @@ router.get("/evaluatee_tracking", auth("admin"), ctrl.evaluatee_tracking);
 router.get("/summary_by_evaluator", auth("admin"), ctrl.summary_by_evaluator);
 router.get("/individual_report", auth("admin"), ctrl.individual_report);
 
+router.get("/online_count", auth("admin", "evaluator", "evaluatee"), ctrl.get_online_count);
+router.get("/login_logs", auth("admin"), ctrl.list_login_logs);
+
 module.exports = router;

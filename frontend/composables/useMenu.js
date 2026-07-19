@@ -19,6 +19,7 @@ const MAP = {
         { label: 'ติดตามสถานะผู้ถูกประเมิน', to: '/evaluatee-tracking', icon: 'mdi-account-eye-outline' },
         { label: 'รายงานรายบุคคล', to: '/individual-report', icon: 'mdi-file-account-outline' },
         { label: 'สรุปผลรายกรรมการ', to: '/evaluator-summary', icon: 'mdi-chart-box-multiple-outline' },
+        { label: 'ประวัติการล็อกอิน', to: '/login-logs', icon: 'mdi-history' },
         { label: 'หัวข้อการประเมิน', to: '/list_topics', icon: 'mdi-book' },
         { label: 'ตัวชี้วัด', to: '/list_indicators', icon: 'mdi-chart-bar' },
         { label: 'ประเภทสาขาอาชีพ', to: '/list_categories', icon: 'mdi-chart-pie' },

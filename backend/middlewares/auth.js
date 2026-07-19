@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const db = require('../db/knex');
 
 module.exports = (...roles) => {
   console.log('[AUTH] roles allowed:', roles);
@@ -36,6 +37,16 @@ module.exports = (...roles) => {
 
       req.user = payload;
       console.log('[AUTH] -> next, user:', req.user);
+
+      // อัปเดตเวลาใช้งานล่าสุด (ไม่บล็อกการทำงาน)
+      db('users')
+        .where({ id: payload.id })
+        .update({ last_active_at: db.fn.now() })
+        .catch(err => {
+          // ดักจับข้อผิดพลาดเงียบ เพื่อป้องกันไม่ให้ระบบล่มถ้ายังไม่ได้รัน SQL
+          console.error('[AUTH] Failed to update last_active_at:', err.message);
+        });
+
       return next();
     } catch (e) {
       console.log('[AUTH] ERROR:', e.name, e.message);

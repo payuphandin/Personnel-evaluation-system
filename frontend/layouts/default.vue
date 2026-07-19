@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
 import { useMenu } from '~/composables/useMenu'
 import { useAuthStore } from '~/stores/auth'
 import axios from 'axios'
@@ -17,9 +17,38 @@ const route = useRoute()
 
 const userInitial = computed(() => (userName.value || 'U')[0].toUpperCase())
 
+const onlineData = ref({ total: 0, admin: 0, evaluator: 0, evaluatee: 0 })
+let onlineInterval = null
+
+async function fetchOnlineCount() {
+  const token = localStorage.getItem('auth_token')
+  if (!token) return
+  try {
+    const { data } = await axios.get('http://localhost:7000/api/admin/online_count', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (data.success) {
+      onlineData.value = {
+        total: data.total || 0,
+        admin: data.admin || 0,
+        evaluator: data.evaluator || 0,
+        evaluatee: data.evaluatee || 0
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch online counts', err)
+  }
+}
+
 onMounted(() => {
   authStore.hydrateFromStorage()
   fetchLatestProfile()
+  fetchOnlineCount()
+  onlineInterval = setInterval(fetchOnlineCount, 30000)
+})
+
+onBeforeUnmount(() => {
+  if (onlineInterval) clearInterval(onlineInterval)
 })
 
 const roleLabel = computed(() => ({
@@ -220,6 +249,14 @@ async function logout() {
             <v-icon size="13" color="indigo-lighten-2" class="mr-1">mdi-shield-check-outline</v-icon>
             <span>ระบบปลอดภัย — ข้อมูลถูกเข้ารหัส</span>
           </div>
+
+          <div class="footer-center d-flex align-center" style="gap: 6px;">
+            <v-icon size="10" color="success" class="pulse-dot">mdi-circle</v-icon>
+            <span style="font-size: 11px; color: #7986cb;">
+              ออนไลน์: แอดมิน {{ onlineData.admin }} | กรรมการ {{ onlineData.evaluator }} | ครู {{ onlineData.evaluatee }} | รวม {{ onlineData.total }} คน
+            </span>
+          </div>
+
           <div class="footer-right">
             © 2026 VEC Skills System — Excellence in Evaluation
           </div>
@@ -574,4 +611,21 @@ async function logout() {
   font-size: 11px; color: #9fa8da; font-weight: 500;
 }
 .footer-left { display: flex; align-items: center; gap: 4px; }
+.pulse-dot {
+  animation: pulseGreen 2s infinite;
+}
+@keyframes pulseGreen {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+}
 </style>

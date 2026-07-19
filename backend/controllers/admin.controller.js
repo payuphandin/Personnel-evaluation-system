@@ -2133,3 +2133,72 @@ exports.individual_report = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// ดึงจำนวนผู้ใช้งานที่กำลังออนไลน์
+exports.get_online_count = async (req, res) => {
+  try {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    // เช็คก่อนว่ามีคอลัมน์นี้หรือไม่ ป้องกันการพังถ้ารันโค้ดก่อนเพิ่มฟิลด์ใน DB
+    const hasColumn = await db.schema.hasColumn("users", "last_active_at");
+    if (!hasColumn) {
+      return res.json({ success: true, total: 1, admin: 1, evaluator: 0, evaluatee: 0 });
+    }
+
+    const onlineUsers = await db("users")
+      .where("last_active_at", ">=", fiveMinutesAgo)
+      .select("role");
+
+    const total = onlineUsers.length;
+    const admin = onlineUsers.filter((u) => u.role === "admin").length;
+    const evaluator = onlineUsers.filter((u) => u.role === "evaluator").length;
+    const evaluatee = onlineUsers.filter((u) => u.role === "evaluatee").length;
+
+    return res.json({ success: true, total, admin, evaluator, evaluatee });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ดึงรายการประวัติการเข้าใช้งานระบบ (Login logs)
+exports.list_login_logs = async (req, res) => {
+  try {
+    // เช็คก่อนว่ามีตารางนี้หรือไม่ ป้องกันระบบล่ม
+    const hasTable = await db.schema.hasTable("login_logs");
+    if (!hasTable) {
+      return res.json({ success: true, data: [], total: 0, page: 1, limit: 10 });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const search = req.query.search || "";
+    const role = req.query.role || "";
+    const status = req.query.status || "";
+
+    let query = db("login_logs");
+
+    if (search) {
+      query = query.where("username", "like", `%${search}%`);
+    }
+    if (role) {
+      query = query.where({ role });
+    }
+    if (status) {
+      query = query.where({ status });
+    }
+
+    const totalResult = await query.clone().count("id as count").first();
+    const total = totalResult ? parseInt(totalResult.count) : 0;
+
+    const data = await query
+      .select("*")
+      .orderBy("created_at", "desc")
+      .limit(limit)
+      .offset(offset);
+
+    res.json({ success: true, data, total, page, limit });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
