@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: db
--- Generation Time: Jul 18, 2026 at 04:44 AM
+-- Generation Time: Jul 19, 2026 at 04:58 AM
 -- Server version: 8.0.46
 -- PHP Version: 8.3.31
 
@@ -408,6 +408,30 @@ INSERT INTO `indicator_evidence` (`indicator_id`, `evidence_type_id`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `login_logs`
+--
+
+CREATE TABLE `login_logs` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ip_address` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `login_logs`
+--
+
+INSERT INTO `login_logs` (`id`, `user_id`, `username`, `role`, `ip_address`, `status`, `created_at`) VALUES
+(1, 3, 'กรรมการประเมินไอที', 'evaluator', '::ffff:127.0.0.1', 'success', '2026-07-19 04:44:20'),
+(2, 25, 'teedada', 'evaluatee', '::1', 'success', '2026-07-19 04:50:25');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `org_groups`
 --
 
@@ -564,27 +588,28 @@ CREATE TABLE `users` (
   `position` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `avatar` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_active_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `password_hash`, `name_th`, `role`, `status`, `department_id`, `position`, `avatar`, `created_at`, `updated_at`) VALUES
-(1, 'admin@ccollege.ac.th', '$2b$10$f6g9QMzpdIjzUyckEbFLIeuSRKEGJdNSu.TZ3tmegQ5ioSop02og6', 'ผู้ดูแลระบบ', 'admin', 'active', 1, NULL, 'avatar-1-1782361838697.png', '2026-05-20 04:02:17', '2026-06-25 04:30:38'),
-(2, 'eva.me@ccollege.ac.th', '$2b$10$ycxCewoT/qjuiZiDb7hfP.aGEnWZu8rMF3UzRO6QgxgIO7lKLsRSm', 'กรรมการประเมินเครื่องกล', 'evaluator', 'active', 2, NULL, 'avatar-2-1782725479425.jpg', '2026-05-20 04:02:17', '2026-06-29 09:31:19'),
-(3, 'eva.it@ccollege.ac.th', '$2b$10$rCg8BVUQSVs51Hb/fwctneQcBfIE0RL5dVRm1bcX5CPyGKyRAxFoe', 'กรรมการประเมินไอที', 'evaluator', 'active', 1, NULL, NULL, '2026-05-20 04:02:17', '2026-05-20 04:02:17'),
-(4, 't.it01@ccollege.ac.th', '$2b$10$V0GTPQ/2Ap5r0nzE49FjfOW7xmXuSPQ8m7P81jwKrFFltwCvBXTsy', 'ครูไอที 01', 'evaluatee', 'active', 1, NULL, NULL, '2026-05-20 04:02:17', '2026-05-20 04:02:17'),
-(5, 't.me01@ccollege.ac.th', '$2b$10$gkmAZQmS5GjA3cgHAzZgN.HZzaH4gKeuTkeJnNoAEFT2OyczRibuC', 'ครูเครื่องกล 01', 'evaluatee', 'active', 2, NULL, NULL, '2026-05-20 04:02:17', '2026-05-20 04:02:17'),
-(6, 't.acc01@ccollege.ac.th', '$2b$10$5FALWHRfgaBZC0Az5BAVdeelVK4LgRGyKOmSC0hNI3yU6.PRbCxnW', 'ครูบัญชี 01', 'evaluatee', 'active', 4, NULL, NULL, '2026-05-20 04:02:17', '2026-05-20 04:02:17'),
-(19, 'krupayukub@college.ac.th', '$2b$10$XiYTcrIIbJAjc8x7RrNeGucz6asU35SEjfHpteD01JCb7yiEEEuTu', 'ครูพายุเอง', 'evaluatee', 'active', 1, NULL, 'avatar-19-1782095636842.png', '2026-06-19 11:25:11', '2026-06-22 02:33:56'),
-(23, 'dadad@cc.ada', '$2b$10$FV0pGLea6QX/qHiGDngvJu.O4H1Oosg8nZboCWNiM1SmMjm.DW8vm', 'eva1', 'evaluator', 'active', 3, NULL, NULL, '2026-06-25 04:40:11', '2026-06-27 12:26:48'),
-(24, 'dadw@fadap.ca', '$2b$10$9/zHOmTxL4pYU06FpvBBi.L5I2T49m0VR0urxZ3GcOee8E8aOw2ou', 'eva2', 'evaluator', 'active', 5, NULL, NULL, '2026-06-25 04:41:44', '2026-06-27 12:26:45'),
-(25, 'adlJPHO@dadadk', '$2b$10$FgqYnP8FXVIQw0kh6Y4JyuaL1y6Qw33gEIyhHWul5jDm4.nDSURem', 'teedada', 'evaluatee', 'active', 1, 'ตำแหน่งครู', NULL, '2026-06-25 04:42:00', '2026-07-11 10:02:24'),
-(27, 'jiwa@ka.com', '$2b$10$YS8qdP75UzSmhR.neekOCeP6Z2VjvkKktcMzbaSdLnrX/koFP/dhO', 'ครูจีว่า', 'evaluatee', 'active', 1, NULL, 'avatar-27-1782891288279.png', '2026-07-01 06:46:51', '2026-07-01 07:34:48'),
-(30, 'kruthara@college.ac.th', '$2b$10$0hKGf2eh6qok5zOSNe7.Ne6MRqIkGmQPYbW2gmQSXtCtyAgO9zGpC', 'ครูธารา', 'evaluatee', 'active', 1, 'ครูคศ.02', NULL, '2026-07-15 09:41:40', '2026-07-15 09:41:40'),
-(31, 'payu@capca.com', '$2b$10$Mj0kLpvofKREciPIOzzMo.LScPdYQlv3nDKtt9qI4c27O4fX/1L2C', 'ครูพายุ', 'evaluatee', 'active', 3, NULL, NULL, '2026-07-15 09:51:25', '2026-07-15 09:51:25');
+INSERT INTO `users` (`id`, `email`, `password_hash`, `name_th`, `role`, `status`, `department_id`, `position`, `avatar`, `created_at`, `updated_at`, `last_active_at`) VALUES
+(1, 'admin@ccollege.ac.th', '$2b$10$f6g9QMzpdIjzUyckEbFLIeuSRKEGJdNSu.TZ3tmegQ5ioSop02og6', 'ผู้ดูแลระบบ', 'admin', 'active', 1, NULL, 'avatar-1-1782361838697.png', '2026-05-20 04:02:17', '2026-07-19 04:57:24', '2026-07-19 04:57:24'),
+(2, 'eva.me@ccollege.ac.th', '$2b$10$ycxCewoT/qjuiZiDb7hfP.aGEnWZu8rMF3UzRO6QgxgIO7lKLsRSm', 'กรรมการประเมินเครื่องกล', 'evaluator', 'active', 2, NULL, 'avatar-2-1782725479425.jpg', '2026-05-20 04:02:17', '2026-06-29 09:31:19', NULL),
+(3, 'eva.it@ccollege.ac.th', '$2b$10$rCg8BVUQSVs51Hb/fwctneQcBfIE0RL5dVRm1bcX5CPyGKyRAxFoe', 'กรรมการประเมินไอที', 'evaluator', 'active', 1, NULL, NULL, '2026-05-20 04:02:17', '2026-07-19 04:57:53', '2026-07-19 04:57:53'),
+(4, 't.it01@ccollege.ac.th', '$2b$10$V0GTPQ/2Ap5r0nzE49FjfOW7xmXuSPQ8m7P81jwKrFFltwCvBXTsy', 'ครูไอที 01', 'evaluatee', 'active', 1, NULL, NULL, '2026-05-20 04:02:17', '2026-05-20 04:02:17', NULL),
+(5, 't.me01@ccollege.ac.th', '$2b$10$gkmAZQmS5GjA3cgHAzZgN.HZzaH4gKeuTkeJnNoAEFT2OyczRibuC', 'ครูเครื่องกล 01', 'evaluatee', 'active', 2, NULL, NULL, '2026-05-20 04:02:17', '2026-05-20 04:02:17', NULL),
+(6, 't.acc01@ccollege.ac.th', '$2b$10$5FALWHRfgaBZC0Az5BAVdeelVK4LgRGyKOmSC0hNI3yU6.PRbCxnW', 'ครูบัญชี 01', 'evaluatee', 'active', 4, NULL, NULL, '2026-05-20 04:02:17', '2026-05-20 04:02:17', NULL),
+(19, 'krupayukub@college.ac.th', '$2b$10$XiYTcrIIbJAjc8x7RrNeGucz6asU35SEjfHpteD01JCb7yiEEEuTu', 'ครูพายุเอง', 'evaluatee', 'active', 1, NULL, 'avatar-19-1782095636842.png', '2026-06-19 11:25:11', '2026-06-22 02:33:56', NULL),
+(23, 'dadad@cc.ada', '$2b$10$FV0pGLea6QX/qHiGDngvJu.O4H1Oosg8nZboCWNiM1SmMjm.DW8vm', 'eva1', 'evaluator', 'active', 3, NULL, NULL, '2026-06-25 04:40:11', '2026-06-27 12:26:48', NULL),
+(24, 'dadw@fadap.ca', '$2b$10$9/zHOmTxL4pYU06FpvBBi.L5I2T49m0VR0urxZ3GcOee8E8aOw2ou', 'eva2', 'evaluator', 'active', 5, NULL, NULL, '2026-06-25 04:41:44', '2026-06-27 12:26:45', NULL),
+(25, 'adlJPHO@dadadk', '$2b$10$FgqYnP8FXVIQw0kh6Y4JyuaL1y6Qw33gEIyhHWul5jDm4.nDSURem', 'teedada', 'evaluatee', 'active', 1, 'ตำแหน่งครู', NULL, '2026-06-25 04:42:00', '2026-07-19 04:57:33', '2026-07-19 04:57:33'),
+(27, 'jiwa@ka.com', '$2b$10$YS8qdP75UzSmhR.neekOCeP6Z2VjvkKktcMzbaSdLnrX/koFP/dhO', 'ครูจีว่า', 'evaluatee', 'active', 1, NULL, 'avatar-27-1782891288279.png', '2026-07-01 06:46:51', '2026-07-01 07:34:48', NULL),
+(30, 'kruthara@college.ac.th', '$2b$10$0hKGf2eh6qok5zOSNe7.Ne6MRqIkGmQPYbW2gmQSXtCtyAgO9zGpC', 'ครูธารา', 'evaluatee', 'active', 1, 'ครูคศ.02', NULL, '2026-07-15 09:41:40', '2026-07-15 09:41:40', NULL),
+(31, 'payu@capca.com', '$2b$10$Mj0kLpvofKREciPIOzzMo.LScPdYQlv3nDKtt9qI4c27O4fX/1L2C', 'ครูพายุ', 'evaluatee', 'active', 3, NULL, NULL, '2026-07-15 09:51:25', '2026-07-15 09:51:25', NULL);
 
 -- --------------------------------------------------------
 
@@ -675,13 +700,13 @@ INSERT INTO `vocational_fields` (`code`, `name_th`, `category_id`) VALUES
 -- (See below for the actual view)
 --
 CREATE TABLE `v_evidence_progress` (
-`buddhist_year` int
+`evaluatee_name` varchar(255)
 ,`dept_name` varchar(255)
-,`evaluatee_name` varchar(255)
-,`files_uploaded` bigint
+,`buddhist_year` int
+,`topic_title` varchar(255)
 ,`indicator_code` varchar(40)
 ,`indicator_name` varchar(255)
-,`topic_title` varchar(255)
+,`files_uploaded` bigint
 );
 
 --
@@ -770,6 +795,13 @@ ALTER TABLE `indicators`
 ALTER TABLE `indicator_evidence`
   ADD PRIMARY KEY (`indicator_id`,`evidence_type_id`),
   ADD KEY `fk_ie_ev` (`evidence_type_id`);
+
+--
+-- Indexes for table `login_logs`
+--
+ALTER TABLE `login_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `org_groups`
@@ -871,6 +903,12 @@ ALTER TABLE `indicators`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
+-- AUTO_INCREMENT for table `login_logs`
+--
+ALTER TABLE `login_logs`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
 -- AUTO_INCREMENT for table `org_groups`
 --
 ALTER TABLE `org_groups`
@@ -967,6 +1005,12 @@ ALTER TABLE `indicators`
 ALTER TABLE `indicator_evidence`
   ADD CONSTRAINT `fk_ie_ev` FOREIGN KEY (`evidence_type_id`) REFERENCES `evidence_types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_ie_ind` FOREIGN KEY (`indicator_id`) REFERENCES `indicators` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `login_logs`
+--
+ALTER TABLE `login_logs`
+  ADD CONSTRAINT `login_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `self_eval_submissions`
