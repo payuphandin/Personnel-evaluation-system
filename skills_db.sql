@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: db
--- Generation Time: Jul 19, 2026 at 04:58 AM
+-- Generation Time: Aug 26, 2026 at 11:20 AM
 -- Server version: 8.0.46
 -- PHP Version: 8.3.31
 
@@ -130,7 +130,6 @@ INSERT INTO `attachments` (`id`, `period_id`, `evaluatee_id`, `indicator_id`, `e
 (124, 1, 30, 12, 12, 'link', 'ลิงก์หลักฐานแนบ', NULL, NULL, 'https://www.youtube.com/', '2026-07-15 09:43:40'),
 (125, 1, 30, 13, 13, 'link', 'ลิงก์หลักฐานแนบ', NULL, NULL, 'https://www.youtube.com/', '2026-07-15 09:43:40'),
 (126, 1, 30, 15, 14, 'link', 'ลิงก์หลักฐานแนบ', NULL, NULL, 'https://www.youtube.com/', '2026-07-15 09:43:40'),
-(127, 1, 30, 16, 15, 'link', 'ลิงก์หลักฐานแนบ', NULL, NULL, 'https://www.youtube.com/', '2026-07-15 09:43:40'),
 (128, 1, 30, 17, 16, 'link', 'ลิงก์หลักฐานแนบ', NULL, NULL, 'https://www.youtube.com/', '2026-07-15 09:43:40');
 
 -- --------------------------------------------------------
@@ -427,7 +426,13 @@ CREATE TABLE `login_logs` (
 
 INSERT INTO `login_logs` (`id`, `user_id`, `username`, `role`, `ip_address`, `status`, `created_at`) VALUES
 (1, 3, 'กรรมการประเมินไอที', 'evaluator', '::ffff:127.0.0.1', 'success', '2026-07-19 04:44:20'),
-(2, 25, 'teedada', 'evaluatee', '::1', 'success', '2026-07-19 04:50:25');
+(2, 25, 'teedada', 'evaluatee', '::1', 'success', '2026-07-19 04:50:25'),
+(3, 1, 'ผู้ดูแลระบบ', 'admin', '::1', 'success', '2026-08-26 02:46:54'),
+(4, 1, 'ผู้ดูแลระบบ', 'admin', '::1', 'success', '2026-08-26 07:04:51'),
+(5, 3, 'กรรมการประเมินไอที', 'evaluator', '::ffff:127.0.0.1', 'success', '2026-08-26 07:06:07'),
+(6, 30, 'ครูธารา', 'evaluatee', '::1', 'success', '2026-08-26 07:07:13'),
+(7, 1, 'ผู้ดูแลระบบ', 'admin', '::1', 'success', '2026-08-26 07:11:35'),
+(8, 1, 'ผู้ดูแลระบบ', 'admin', '::1', 'success', '2026-08-26 07:20:48');
 
 -- --------------------------------------------------------
 
@@ -597,18 +602,18 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `password_hash`, `name_th`, `role`, `status`, `department_id`, `position`, `avatar`, `created_at`, `updated_at`, `last_active_at`) VALUES
-(1, 'admin@ccollege.ac.th', '$2b$10$f6g9QMzpdIjzUyckEbFLIeuSRKEGJdNSu.TZ3tmegQ5ioSop02og6', 'ผู้ดูแลระบบ', 'admin', 'active', 1, NULL, 'avatar-1-1782361838697.png', '2026-05-20 04:02:17', '2026-07-19 04:57:24', '2026-07-19 04:57:24'),
+(1, 'admin@ccollege.ac.th', '$2b$10$f6g9QMzpdIjzUyckEbFLIeuSRKEGJdNSu.TZ3tmegQ5ioSop02og6', 'ผู้ดูแลระบบ', 'admin', 'active', 1, NULL, 'avatar-1-1782361838697.png', '2026-05-20 04:02:17', '2026-08-26 09:20:05', '2026-08-26 09:20:05'),
 (2, 'eva.me@ccollege.ac.th', '$2b$10$ycxCewoT/qjuiZiDb7hfP.aGEnWZu8rMF3UzRO6QgxgIO7lKLsRSm', 'กรรมการประเมินเครื่องกล', 'evaluator', 'active', 2, NULL, 'avatar-2-1782725479425.jpg', '2026-05-20 04:02:17', '2026-06-29 09:31:19', NULL),
-(3, 'eva.it@ccollege.ac.th', '$2b$10$rCg8BVUQSVs51Hb/fwctneQcBfIE0RL5dVRm1bcX5CPyGKyRAxFoe', 'กรรมการประเมินไอที', 'evaluator', 'active', 1, NULL, NULL, '2026-05-20 04:02:17', '2026-07-19 04:57:53', '2026-07-19 04:57:53'),
+(3, 'eva.it@ccollege.ac.th', '$2b$10$rCg8BVUQSVs51Hb/fwctneQcBfIE0RL5dVRm1bcX5CPyGKyRAxFoe', 'กรรมการประเมินไอที', 'evaluator', 'active', 1, NULL, NULL, '2026-05-20 04:02:17', '2026-08-26 09:05:42', '2026-08-26 09:05:42'),
 (4, 't.it01@ccollege.ac.th', '$2b$10$V0GTPQ/2Ap5r0nzE49FjfOW7xmXuSPQ8m7P81jwKrFFltwCvBXTsy', 'ครูไอที 01', 'evaluatee', 'active', 1, NULL, NULL, '2026-05-20 04:02:17', '2026-05-20 04:02:17', NULL),
 (5, 't.me01@ccollege.ac.th', '$2b$10$gkmAZQmS5GjA3cgHAzZgN.HZzaH4gKeuTkeJnNoAEFT2OyczRibuC', 'ครูเครื่องกล 01', 'evaluatee', 'active', 2, NULL, NULL, '2026-05-20 04:02:17', '2026-05-20 04:02:17', NULL),
 (6, 't.acc01@ccollege.ac.th', '$2b$10$5FALWHRfgaBZC0Az5BAVdeelVK4LgRGyKOmSC0hNI3yU6.PRbCxnW', 'ครูบัญชี 01', 'evaluatee', 'active', 4, NULL, NULL, '2026-05-20 04:02:17', '2026-05-20 04:02:17', NULL),
 (19, 'krupayukub@college.ac.th', '$2b$10$XiYTcrIIbJAjc8x7RrNeGucz6asU35SEjfHpteD01JCb7yiEEEuTu', 'ครูพายุเอง', 'evaluatee', 'active', 1, NULL, 'avatar-19-1782095636842.png', '2026-06-19 11:25:11', '2026-06-22 02:33:56', NULL),
 (23, 'dadad@cc.ada', '$2b$10$FV0pGLea6QX/qHiGDngvJu.O4H1Oosg8nZboCWNiM1SmMjm.DW8vm', 'eva1', 'evaluator', 'active', 3, NULL, NULL, '2026-06-25 04:40:11', '2026-06-27 12:26:48', NULL),
 (24, 'dadw@fadap.ca', '$2b$10$9/zHOmTxL4pYU06FpvBBi.L5I2T49m0VR0urxZ3GcOee8E8aOw2ou', 'eva2', 'evaluator', 'active', 5, NULL, NULL, '2026-06-25 04:41:44', '2026-06-27 12:26:45', NULL),
-(25, 'adlJPHO@dadadk', '$2b$10$FgqYnP8FXVIQw0kh6Y4JyuaL1y6Qw33gEIyhHWul5jDm4.nDSURem', 'teedada', 'evaluatee', 'active', 1, 'ตำแหน่งครู', NULL, '2026-06-25 04:42:00', '2026-07-19 04:57:33', '2026-07-19 04:57:33'),
+(25, 'adlJPHO@dadadk', '$2b$10$FgqYnP8FXVIQw0kh6Y4JyuaL1y6Qw33gEIyhHWul5jDm4.nDSURem', 'teedada', 'evaluatee', 'active', 1, 'ตำแหน่งครู', NULL, '2026-06-25 04:42:00', '2026-07-19 04:58:59', '2026-07-19 04:58:59'),
 (27, 'jiwa@ka.com', '$2b$10$YS8qdP75UzSmhR.neekOCeP6Z2VjvkKktcMzbaSdLnrX/koFP/dhO', 'ครูจีว่า', 'evaluatee', 'active', 1, NULL, 'avatar-27-1782891288279.png', '2026-07-01 06:46:51', '2026-07-01 07:34:48', NULL),
-(30, 'kruthara@college.ac.th', '$2b$10$0hKGf2eh6qok5zOSNe7.Ne6MRqIkGmQPYbW2gmQSXtCtyAgO9zGpC', 'ครูธารา', 'evaluatee', 'active', 1, 'ครูคศ.02', NULL, '2026-07-15 09:41:40', '2026-07-15 09:41:40', NULL),
+(30, 'kruthara@college.ac.th', '$2b$10$0hKGf2eh6qok5zOSNe7.Ne6MRqIkGmQPYbW2gmQSXtCtyAgO9zGpC', 'ครูธารา', 'evaluatee', 'active', 1, 'ครูคศ.02', NULL, '2026-07-15 09:41:40', '2026-08-26 08:07:05', '2026-08-26 08:07:05'),
 (31, 'payu@capca.com', '$2b$10$Mj0kLpvofKREciPIOzzMo.LScPdYQlv3nDKtt9qI4c27O4fX/1L2C', 'ครูพายุ', 'evaluatee', 'active', 3, NULL, NULL, '2026-07-15 09:51:25', '2026-07-15 09:51:25', NULL);
 
 -- --------------------------------------------------------
@@ -906,7 +911,7 @@ ALTER TABLE `indicators`
 -- AUTO_INCREMENT for table `login_logs`
 --
 ALTER TABLE `login_logs`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `org_groups`
@@ -930,7 +935,7 @@ ALTER TABLE `self_eval_submissions`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT for table `vocational_categories`
