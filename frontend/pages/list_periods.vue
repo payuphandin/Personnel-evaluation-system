@@ -406,7 +406,12 @@ async function load() {
 
 async function save() {
   try {
-    const payload = { ...form.value, start_date: formatDate(form.value.start_date), end_date: formatDate(form.value.end_date) }
+    const payload = {
+      ...form.value,
+      is_active: form.value.is_active ? 1 : 0,
+      start_date: formatDate(form.value.start_date),
+      end_date: formatDate(form.value.end_date)
+    }
     if (editMode.value) await axios.put(`http://localhost:7000/api/admin/update_periods/${form.value.id}`, payload, getAuth())
     else await axios.post('http://localhost:7000/api/admin/create_periods', payload, getAuth())
     dialog.value = false; load()
@@ -425,7 +430,16 @@ async function remove(item) {
   }
 }
 
-function formatDate(d) { return d ? d.toString().split('T')[0] : '' }
+function formatDate(d) {
+  if (!d) return ''
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d
+  const date = new Date(d)
+  if (isNaN(date.getTime())) return ''
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 function formatDateDisplay(d) {
   if (!d) return '—'
@@ -438,5 +452,14 @@ const openAdd = () => {
   form.value = { id: null, code: '', name_th: '', buddhist_year: new Date().getFullYear() + 543, start_date: '', end_date: '', is_active: true }
   dialog.value = true
 }
-const openEdit = (item) => { editMode.value = true; form.value = { ...item }; dialog.value = true }
+const openEdit = (item) => {
+  editMode.value = true
+  form.value = {
+    ...item,
+    is_active: Boolean(item.is_active),
+    start_date: formatDate(item.start_date),
+    end_date: formatDate(item.end_date)
+  }
+  dialog.value = true
+}
 </script>

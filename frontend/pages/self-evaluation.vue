@@ -373,12 +373,24 @@
                   </div>
                 </div>
 
-                <div class="d-flex justify-end mt-6" v-if="hasNextTopic">
+                <div class="d-flex justify-space-between align-center align mt-6 flex-wrap gap-3">
                   <v-btn
+                    variant="tonal"
+                    color="teal-darken-3"
+                    rounded="xl"
+                    class="font-weight-bold px-5 shadow-sm"
+                    prepend-icon="mdi-arrow-up"
+                    @click="scrollToTop"
+                  >
+                    เลื่อนไปข้างบน
+                  </v-btn>
+
+                  <v-btn
+                    v-if="hasNextTopic"
                     color="indigo-darken-4"
                     variant="tonal"
                     rounded="xl"
-                    class="font-weight-bold px-6 shadow-sm"
+                    class="font-weight-bold px-6 shadow-sm ms-auto"
                     @click="goToNextTopic"
                   >
                     ถัดไป: {{ nextTopicName }}
@@ -520,11 +532,13 @@
         </div>
       </div>
     </v-dialog>
+
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import axios from "axios";
 import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "vue-router";
@@ -544,6 +558,15 @@ const activeTopicId = ref(null);
 const form = ref({});
 const assessmentStatus = ref("draft");
 const signatureUrl = ref(null);
+const showScrollTop = ref(false);
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+const handleScroll = () => {
+  showScrollTop.value = window.scrollY > 300;
+};
 
 const authStore = useAuthStore();
 if (process.client && !authStore.user) {
@@ -561,7 +584,12 @@ const currentPeriodName = computed(() => {
 // ==========================================
 onMounted(async () => {
   if (!localStorage.getItem("auth_token")) { router.push('/'); return }
+  window.addEventListener("scroll", handleScroll);
   await loadPeriods();
+});
+
+onUnmounted(() => {
+  window.removeEventListener("scroll", handleScroll);
 });
 
 const loadPeriods = async () => {
@@ -675,6 +703,14 @@ const nextTopicName = computed(() => {
   if (currentIndex < topics.value.length - 1)
     return topics.value[currentIndex + 1].title_th;
   return null;
+});
+
+const hasNextTopic = computed(() => {
+  const currentIndex = topics.value.findIndex(
+    (t) => t.id === activeTopicId.value
+  );
+
+  return currentIndex >= 0 && currentIndex < topics.value.length - 1;
 });
 
 // ==========================================
@@ -1531,5 +1567,21 @@ const saveAssessment = async (status, signature = null) => {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+/* Floating Scroll To Top Button */
+.floating-scroll-top-btn {
+  position: fixed !important;
+  bottom: 32px !important;
+  right: 32px !important;
+  z-index: 99 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 10px 25px rgba(15, 118, 110, 0.4) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.floating-scroll-top-btn:hover {
+  transform: translateY(-4px) scale(1.06) !important;
+  box-shadow: 0 14px 30px rgba(15, 118, 110, 0.5) !important;
 }
 </style>

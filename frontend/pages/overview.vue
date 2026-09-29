@@ -1167,7 +1167,14 @@ function checkStatus(item) {
 }
 
 function formatDate(d) {
-  return d ? d.toString().split("T")[0] : "";
+  if (!d) return "";
+  if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 function formatDateDisplay(d) {
   if (!d) return "—";
@@ -1334,6 +1341,7 @@ function openEditPeriod(item) {
   periodEditMode.value = true;
   periodForm.value = {
     ...item,
+    is_active: Boolean(item.is_active),
     start_date: formatDate(item.start_date),
     end_date: formatDate(item.end_date),
   };
@@ -1342,7 +1350,12 @@ function openEditPeriod(item) {
 async function savePeriod() {
   try {
     const opt = getAuthHeaders();
-    const payload = { ...periodForm.value };
+    const payload = {
+      ...periodForm.value,
+      is_active: periodForm.value.is_active ? 1 : 0,
+      start_date: formatDate(periodForm.value.start_date),
+      end_date: formatDate(periodForm.value.end_date),
+    };
     if (periodEditMode.value) {
       await api.put(`/admin/update_periods/${payload.id}`, payload, opt);
     } else {

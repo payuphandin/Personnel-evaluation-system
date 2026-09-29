@@ -5,10 +5,9 @@ const path = require("path");
 // ดึงรอบการประเมินทั้งหมด
 exports.list = async (req, res) => {
   try {
-    const now = new Date();
     await db("evaluation_periods")
       .where("is_active", 1)
-      .andWhere("end_date", "<", now)
+      .andWhere(db.raw("DATE(end_date) < CURDATE()"))
       .update({ is_active: 0 });
 
     const data = await db("evaluation_periods")
