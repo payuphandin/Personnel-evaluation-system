@@ -4,7 +4,10 @@ npm-debug.log
 #.env
 build/
 dist/
-
 # Logs
 *.log
 
+.github/
+.gitlab-ci.yml
+run-all.bat
+docker-compose.yml
