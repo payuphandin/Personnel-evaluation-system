@@ -70,6 +70,9 @@ JWT_EXPIRES=2h
 ```text
 Email: admin@ccollege.ac.th
 Password: 12345678
+
+เพิ่มเติม
+user ทั้งหมดในระบบ รหัสผ่านคือ 12345678
 ```
 
 ## URL สำคัญ
