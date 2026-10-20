@@ -183,6 +183,7 @@
             <template #item.actions="{ item }">
               <v-btn
                 icon
+                aria-label="แก้ไขข้อมูลบุคลากร"
                 variant="text"
                 color="indigo-darken-2"
                 size="small"
@@ -235,7 +236,7 @@
               </div>
               <span>จัดการผู้ใช้งาน</span>
             </button>
-            <button class="qa-btn qa-amber" @click="openPeriodManager">
+            <button class="qa-btn qa-secondary" @click="openPeriodManager">
               <div class="qa-icon">
                 <v-icon icon="mdi-calendar-edit" size="22" />
               </div>
@@ -322,7 +323,9 @@
               <div
                 class="dept-pct"
                 :class="
-                  dept.submitted / dept.total >= 1 ? 'pct-done' : 'pct-wip'
+                  dept.total > 0 && dept.submitted / dept.total >= 1
+                    ? 'pct-done'
+                    : 'pct-wip'
                 "
               >
                 {{
@@ -1702,19 +1705,20 @@ async function exportReport() {
   color: white;
   box-shadow: 0 6px 18px rgba(26, 35, 126, 0.25);
 }
-.qa-amber {
-  background: linear-gradient(135deg, #b45309, #f59e0b);
+.qa-secondary {
+  background: linear-gradient(135deg, #3949ab, #2563eb);
   color: white;
-  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 4px 14px rgba(26, 35, 126, 0.16);
 }
 
 /* ===== Export Report Card ===== */
 .export-card {
   border-radius: 20px;
   padding: 22px;
-  background: linear-gradient(135deg, #0f766e, #14b8a6);
+  background: linear-gradient(135deg, #1a237e, #3949ab);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 8px 24px rgba(26, 35, 126, 0.14);
 }
 .export-content {
   display: flex;
@@ -1743,7 +1747,7 @@ async function exportReport() {
   color: rgba(255, 255, 255, 0.7);
 }
 .export-btn {
-  color: #0f766e !important;
+  color: #1a237e !important;
   font-weight: 800 !important;
   font-size: 13px !important;
 }
@@ -1943,6 +1947,24 @@ async function exportReport() {
 }
 .anim-8 {
   animation: cardUp 0.55s 0.54s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-1,
+  .anim-2,
+  .anim-3,
+  .anim-4,
+  .anim-5,
+  .anim-6,
+  .anim-7,
+  .anim-8 {
+    animation: none;
+  }
+
+  .qa-btn,
+  .dept-bar-fill,
+  .period-card {
+    transition: none;
+  }
 }
 @keyframes cardUp {
   from {
